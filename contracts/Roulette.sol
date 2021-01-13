@@ -11,29 +11,21 @@ contract Roulette {
   mapping (address => uint256) public shares_of;
   uint256 public current_shares;
 
-  event LogUint(string, uint);
-
   function receive() public payable {}
 
   function addLiquidity() public payable {
     require(msg.value > 0, "Your didn't send a balance");
     uint256 lx = msg.value;
     uint256 l = address(this).balance - lx;
-    emit LogUint("lx", lx);
-    emit LogUint("l", l);
     if (l <= 0) {
       uint256 base_shares = 10**36;
       current_shares = base_shares * lx;
-      emit LogUint("initial shares", current_shares);
       shares_of[msg.sender] = base_shares * lx;
       return;
     }
     uint256 d = current_shares;
     uint256 p = lx*d;
     uint256 dx = p / l;
-    emit LogUint("d", d);
-    emit LogUint("p", p);
-    emit LogUint("dx", dx);
 
     shares_of[msg.sender] += dx;
     current_shares += dx;

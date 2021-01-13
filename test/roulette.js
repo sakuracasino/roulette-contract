@@ -39,48 +39,100 @@ async function removeLiquidity(from) {
   return await getFee(remove_liquidity_tx);
 }
 
-// function contractInteractor(contract, assert) {
-//   const accountFees = {};
-//   const accountInitial = {};
+function contractInteractor(contractInstance) {
+  let accountFees = {};
+  let accountInitial = {};
 
-//   /*
-//   [
-//     {
-//       method: '',
-//       args: [],
-//       props: {}
-//     },
-//     {
-//       address: '',
-//       expectedDiff: 0
-//     }
-//   ]
-//    */
-//   return function (config) {
-//     for(action in config) {
-//       if(action.expectedDiff) {
-//         assert.equal(
-//           (await getBalance(address)).toString(),
-//           accountInitial[address]
-//             .add(new BN(action.expectedDiff))
-//             .sub(accountFees[address] || new BN(0))
-//             .toString()
-//         );
-//         return;
-//       }
-//       if(props && props.from) {
-//         if (!accountFees[props.from]) {
-//           accountFees[props.from] = new BN(0);
-//           accountInitial[props.from] = await getBalance(address);
-//         }
-//       }
-//       const _tx = await contract[action.method].call(...args, props);
-//       if(props && props.from) {
-//         accountFees[props.from] = accountFees[props.from].add(await getFee(_tx));
-//       }
-//     }
-//   }
-// }
+  return async function(config) {
+    for(action of config) {
+      const {props, expectedDiff, args, method, address, clear} = action;
+      if(clear) {
+        accountFees = {};
+        accountInitial = {};
+        continue;
+      }
+      if(expectedDiff !== undefined) {
+        const currentBalance = await getBalance(address);
+        const oldBalanceMinusFees = accountInitial[address].sub(accountFees[address] || new BN(0));
+        assert.equal(
+          currentBalance.sub(oldBalanceMinusFees).toString(),
+          new BN(expectedDiff).toString()
+        );
+        continue;
+      }
+      if(props && props.from) {
+        if (!accountFees[props.from]) {
+          accountFees[props.from] = new BN(0);
+          accountInitial[props.from] = await getBalance(props.from);
+        }
+      }
+      const _tx = await contractInstance[method](...(args || []), props);
+      if(props && props.from) {
+        accountFees[props.from] = accountFees[props.from].add(await getFee(_tx));
+      }
+    }
+  };
+};
+
+function rouletteInteractor(logs = false) {
+  let _queue = [];
+  const actions = {
+    removeLiquidity: function ({address}) {
+      _queue.push({
+        method: 'removeLiquidity',
+        props: {
+          from: address,
+        },
+      });
+      return actions;
+    },
+    addLiquidity: function ({address, amount}) {
+      _queue.push({
+        method: 'addLiquidity',
+        props: {
+          from: address,
+          value: amount,
+        },
+      });
+      return actions;
+    },
+    bet: function ({address, amount, betNumber}) {
+      _queue.push({
+        method: 'bet',
+        args: [betNumber],
+        props: {
+          from: address,
+          value: amount,
+        },
+      });
+      return actions;
+    },
+    assertAddressDiff: function ({address, diff}) {
+      _queue.push({
+        address,
+        expectedDiff: diff,
+      });
+      return actions;
+    },
+    artificiallyGrow({address, amount}) {
+      _queue.push({
+        method: 'receive',
+        props: {
+          from: address,
+          value: amount,
+        },
+      });
+      return actions;
+    },
+    run: async function () {
+      const roulette = contractInteractor(await Roulette.deployed());
+      await roulette([..._queue, {clear: true}]);
+      _queue = [];
+      return actions;
+    }
+  };
+  return actions;
+}
 
 
 contract('Roulette', async (accounts) => {
@@ -149,13 +201,6 @@ contract('Roulette', async (accounts) => {
     // withdraw liquidity
     fees_1 = fees_1.add(await removeLiquidity(accounts[1]));
     fees_2 = fees_2.add(await removeLiquidity(accounts[2]));
-
-    console.log('balance_1', initial_balance_1.toString());
-    console.log('balance_1', fees_1.toString());
-    console.log('balance_1', (await getBalance(accounts[1])).toString());
-    console.log('balance_2', initial_balance_2.toString());
-    console.log('balance_2', fees_2.toString());
-    console.log('balance_2', (await getBalance(accounts[2])).toString());
     
     assert.equal(
       (await getBalance(accounts[1])).toString(),
@@ -165,5 +210,58 @@ contract('Roulette', async (accounts) => {
       (await getBalance(accounts[2])).toString(),
       initial_balance_2.add(new BN(2500)).sub(fees_2).toString()
     );
+  });
+  it('should persist liquidity from balances', async () => {
+    const interactor = rouletteInteractor();
+
+    await interactor
+      .addLiquidity({address: accounts[0], amount: 35})
+      .assertAddressDiff({address: accounts[0], diff: -35})
+      .removeLiquidity({address: accounts[0]})
+      .assertAddressDiff({address: accounts[0], diff: 0})
+      .run();
+
+    await interactor
+      .addLiquidity({address: accounts[1], amount: 100000000})
+      .addLiquidity({address: accounts[2], amount: 1})
+      .addLiquidity({address: accounts[3], amount: 4567})
+      .removeLiquidity({address: accounts[1]})
+      .removeLiquidity({address: accounts[2]})
+      .removeLiquidity({address: accounts[3]})
+      .assertAddressDiff({address: accounts[1], diff: 0})
+      .assertAddressDiff({address: accounts[2], diff: 0})
+      .assertAddressDiff({address: accounts[3], diff: 0})
+      .run();
+  });
+  it('should persist liquidity from multiple balances with increases', async () => {
+    let interactor = rouletteInteractor();
+
+    async function testLiquidityWithIncrements(deposits = [], increase = 4000) {
+      let totalLiquidity = deposits.reduce((_, x) => _+x, 0);
+      deposits.forEach((balance, index) => {
+        interactor.addLiquidity({address: accounts[1+index], amount: balance})        
+      });
+      interactor.artificiallyGrow({amount: increase, address: accounts[0]});
+      deposits.forEach((_, index) => {
+        interactor.removeLiquidity({address: accounts[1+index]})        
+      });
+      let totalGains = increase;
+      deposits.forEach((balance, index) => {
+        const share = balance / totalLiquidity;
+        const gain = Math.floor(share*totalGains);
+        interactor.assertAddressDiff({
+          address: accounts[1+index],
+          diff: gain
+        })
+        totalLiquidity -= balance;
+        totalGains -= gain;
+      });
+      await interactor.run();
+    };
+
+    await testLiquidityWithIncrements([33, 71, 101]);
+    await testLiquidityWithIncrements([10000000, 1, 13], 600000000000);
+    await testLiquidityWithIncrements([100000000000000, 1, 1], 1);
+    await testLiquidityWithIncrements([100000000000000, 100000000000000, 1], 478);
   });
 });
