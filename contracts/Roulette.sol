@@ -38,6 +38,9 @@ contract Roulette {
     shares_of[msg.sender] = 0;
   }
 
+  // 0: black
+  // 1: red
+  // 2: green
   function betColor(uint color) public payable {
     require(msg.value <= getMaxBet(), "Your bet exceeds the max allowed");
     uint256 randomNumber = random() % 37;
