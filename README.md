@@ -20,6 +20,7 @@ Crypto Roulette
 ### Running the project
 1. Run `make install` for installing node dependencies
 2. Run `make run` for running the ganache server
+2. Run `make test` for checking everything is ok
 
 _You can run the GUI instead of doing make run, just make sure that ganache server is on port 8545_
 
