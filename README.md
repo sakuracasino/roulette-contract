@@ -10,11 +10,11 @@ Crypto Roulette
 - [ ] Implement v0.2: Chainlink VRF + blockhash for random
 - [ ] Implement v0.3: bet queue + Chainlink VRF
 - [ ] Implement v0.4: bet queue + RANDAO + Chainlink VRF
-- [ ] Implement v0.5: bet queue + RANDAO + Chainlink VRF
-- [ ] Investigate v0.6: bet queue + RANDAO + Custom oracle
-- [ ] Investigate v0.7: bet queue + RANDAO + blockhash delay?
+- [ ] Investigate v0.5: bet queue + RANDAO + Custom oracle
+- [ ] Investigate v0.6: bet queue + RANDAO + blockhash delay?
 - [ ] Investigate implementations in POLKADOT/TRON/Binance-SmartChain 
 - [ ] Implement basic UI for providing liquidity and bets, use `.github.io` domain
+- [ ] Use correct contrains
 - [ ] Deploy v1.0b into testnets and stress test validations
 - [ ] Deploy v1.0stable into the mainnet
 
