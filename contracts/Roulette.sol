@@ -62,6 +62,7 @@ contract Roulette {
     return shares_of[_address];
   }
 
+  // Temp random, replace with Chainlink VRF
   function random() private view returns(uint256) {
     uint256 seed = uint256(keccak256(abi.encodePacked(
         block.timestamp + block.difficulty +
