@@ -68,9 +68,13 @@ function contractInteractor(contractInstance) {
       }
       const _tx = await contractInstance[method](...(args || []), props);
       if(props && props.from) {
+        // console.log(`fee: ${method}`, web3.utils.fromWei((await getFee(_tx)).toString()));
         accountFees[props.from] = accountFees[props.from].add(await getFee(_tx));
       }
     }
+    return {
+      accountFees, accountInitial
+    };
   };
 };
 
@@ -96,10 +100,15 @@ function rouletteInteractor(logs = false) {
       });
       return actions;
     },
-    bet: function ({address, amount, betNumber}) {
+    betColor: function ({address, amount, color}) {
+      const colors = {
+        'black': 0,
+        'red': 1,
+        'green': 2,
+      };
       _queue.push({
-        method: 'bet',
-        args: [betNumber],
+        method: 'betColor',
+        args: [colors[color]],
         props: {
           from: address,
           value: amount,
@@ -126,9 +135,11 @@ function rouletteInteractor(logs = false) {
     },
     run: async function () {
       const roulette = contractInteractor(await Roulette.deployed());
-      await roulette([..._queue, {clear: true}]);
+      const result = await roulette(_queue);
+
+      await roulette([{clear: true}]);
       _queue = [];
-      return actions;
+      return result;
     }
   };
   return actions;
@@ -263,5 +274,50 @@ contract('Roulette', async (accounts) => {
     await testLiquidityWithIncrements([10000000, 1, 13], 600000000000);
     await testLiquidityWithIncrements([100000000000000, 1, 1], 1);
     await testLiquidityWithIncrements([100000000000000, 100000000000000, 1], 478);
+  });
+
+  it('should play with betColor', async () => {
+    const betSize = web3.utils.toWei('0.5', 'ether');
+    const betAccount = accounts[1];
+    const tries = 30;
+    const colors = ['black', 'red', 'green'];    
+    const start_block = (await web3.eth.getBlockNumber()) + 1;
+    const roulette = await Roulette.deployed();
+    const interactor = rouletteInteractor();
+
+    interactor.addLiquidity({address: accounts[0], amount: web3.utils.toWei('90', 'ether')});
+    interactor.addLiquidity({address: accounts[2], amount: web3.utils.toWei('90', 'ether')});
+    
+    for(let i = 0 ; i < tries; i++) {
+      interactor.betColor({address: betAccount, amount: betSize, color: colors[Math.floor(Math.random() * 3)]});
+    }
+    
+    interactor.removeLiquidity({address: accounts[0]});
+    interactor.removeLiquidity({address: accounts[2]});
+    const results = await interactor.run();
+    
+    const betEvents = (await roulette.getPastEvents('Bet', {
+      fromBlock: start_block,
+      toBlock: 'latest',
+    })).map(event => event.args);
+
+    let [win, lose] = [0, 0];
+    for (const event of betEvents) {
+      // console.log(event[0], `$${web3.utils.fromWei(event[2].toString())}, [${colors[event[3].toString()]}] => ${event[4].toString()}`);
+      if (event[0] == 'LOSE') {
+        lose++;
+      } else {
+        win++;
+      }
+    }
+    const diff = (new BN(betSize)).mul(new BN(win - lose));
+
+    const currentBalance = await getBalance(betAccount);
+    const oldBalanceMinusFees = results.accountInitial[betAccount].sub(results.accountFees[betAccount]);
+
+    assert.equal(
+      currentBalance.sub(oldBalanceMinusFees).toString(),
+      diff.toString()
+    );
   });
 });

@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.5.16;
 
-// This is just a simple example of a coin-like contract.
-// It is not standards compatible and cannot be expected to talk to other
-// coin/token contracts. If you want to create a standards-compliant
-// token, see: https://github.com/ConsenSys/Tokens. Cheers!
-
 contract Roulette {
 
   mapping (address => uint256) public shares_of;
   uint256 public current_shares;
-
+  
+  event Bet(string, address, uint, uint, uint256);
+  
   function receive() public payable {}
 
   function addLiquidity() public payable {
@@ -41,11 +38,15 @@ contract Roulette {
     shares_of[msg.sender] = 0;
   }
 
-  function bet(uint betNumber) public payable {
+  function betColor(uint color) public payable {
     require(msg.value <= getMaxBet(), "Your bet exceeds the max allowed");
-    if (betNumber % 2 == 0) {
+    uint256 randomNumber = random() % 37;
+    if ((randomNumber == 0 && color == 2) || (randomNumber % 2 == color)) {
       msg.sender.transfer(msg.value * 2);
+      emit Bet("WIN", address(msg.sender), msg.value, color, randomNumber);
+      return;
     }
+    emit Bet("LOSE", address(msg.sender), msg.value, color, randomNumber);
   }
 
   function getMaxBet() public view returns(uint) {
@@ -60,4 +61,16 @@ contract Roulette {
   function getSharesOf(address _address) public view returns(uint) {
     return shares_of[_address];
   }
+
+  function random() private view returns(uint256) {
+    uint256 seed = uint256(keccak256(abi.encodePacked(
+        block.timestamp + block.difficulty +
+        ((uint256(keccak256(abi.encodePacked(block.coinbase)))) / (now)) +
+        block.gaslimit + 
+        ((uint256(keccak256(abi.encodePacked(msg.sender)))) / (now)) +
+        block.number
+    )));
+
+    return (seed - ((seed / 1000) * 1000));
+    }
 }
