@@ -1,5 +1,6 @@
 Crypto Roulette
 ---
+![](https://github.com/ivandiazwm/crypto-roulette/blob/master/preview.jpg?raw=true)
 
 ### Checklist
 - [x] Implement contract pooling
