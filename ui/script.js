@@ -28,12 +28,16 @@ window.addEventListener('load', async () => {
             const sharesOfLogged = await RouletteContract.methods.getSharesOf(accountAddress).call();
             const contractBalance = await web3.eth.getBalance(contractAddress);
             const _balance = await web3.eth.getBalance(accountAddress);
-            const liquidity = contractBalance * (currentShares / sharesOfLogged);
-            const ethAtStake = liquidity ? web3.utils.fromWei(`${liquidity}`, 'ether') : 0;
-            const balance = _balance ? web3.utils.fromWei(`${_balance}`, 'ether') : 0;
-            document.getElementById('current-liquidity').innerHTML = `${ethAtStake} ETH`;  
-            document.getElementById('current-balance').innerHTML = `${balance} ETH`;
-            document.getElementById('max-bet').innerHTML = `(Max. ${maxBet} ETH)`;
+            try {
+              const liquidity = contractBalance * (sharesOfLogged / currentShares);
+              const ethAtStake = liquidity ? web3.utils.fromWei(`${liquidity}`, 'ether') : 0;
+              const balance = _balance ? web3.utils.fromWei(`${_balance}`, 'ether') : 0;  
+              document.getElementById('current-liquidity').innerHTML = `${ethAtStake} ETH`;  
+              document.getElementById('current-balance').innerHTML = `${balance} ETH`;
+              document.getElementById('max-bet').innerHTML = `(Max. ${maxBet} ETH)`;
+            } catch(e) {
+              console.log(e);
+            }
           };
 
           const refreshBets = async function () {
