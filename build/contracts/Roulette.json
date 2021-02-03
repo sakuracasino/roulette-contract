@@ -10139,10 +10139,54 @@
       "links": {},
       "address": "0x48b2c4C87fb208Aa38f8ecDab68A658dAe57e32e",
       "transactionHash": "0x24fbc3372c819601e0114b3c2573cf1847b6bdfb06c837d591a9903a001a6761"
+    },
+    "1612317975490": {
+      "events": {
+        "0xa8c0f93e325cba2e605e8db9257de433fc020fbd68e246fb1dbbf6ef7ac15ea6": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "Bet",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0xB81E23376C24843F9455257A684365519B8d37dC",
+      "transactionHash": "0x62501f5dc37d32c6ef177df7eab20e1d8b8d037744eadb55579151e966117a35"
     }
   },
   "schemaVersion": "3.3.3",
-  "updatedAt": "2021-01-26T03:56:16.473Z",
+  "updatedAt": "2021-02-03T02:08:09.039Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

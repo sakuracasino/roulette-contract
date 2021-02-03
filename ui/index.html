@@ -1,28 +1,88 @@
 <html>
   <head>
+    <title>Ethereum Roulette</title>
+    <style>
+      #current-liquidity {
+        color: green;
+      }
+      table, th, td {
+        /* border: 1px solid black; */
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: normal;
+      }
+      th, td {
+        padding-right: 20px;
+      }
+      .bet-status-win {
+        color: green;
+      }
+      .bet-status-lose {
+        color: red;
+      }
+      .bet-amount {
+        color: blue;
+      }
+      .bet-thrown {
+        color: gray;
+      }
+    </style>
   </head>
   <body>
-    <button>Connect with metamask</button>
     <h4>Add liquidity</h4>
     <div>
       <div>
-        <input id="liquidity-add" type="text" placeholder="0.0"/> ETH
+        <input id="liquidity-add-input" type="text" placeholder="0.0"/> ETH
       </div>
-      <button>Add liquidity</button>
+      <button id="liquidity-add-button">Add liquidity</button>
     </div>
     <h4>Remove liquidity</h4>
     <div>
-      <div>
-        You're not connected
-      </div>
-      <button>Remove liquidity</button>
+      Current liquidity <span id="current-liquidity">???</span>
     </div>
+    <div>
+      <button id="liquidity-remove-button">Remove liquidity</button>
+    </div>
+    <hr />
     <h4>Bet!</h4>
     <div>
       <div>
-        You're not connected
+        <input id="bet-amount" placeholder="Enter bet amount in ETH..." style="width:300px;"/>
       </div>
-      <button>Remove liquidity</button>
-    </div> 
+      <select id="bet-color">
+        <option value="0">Black</option>
+        <option value="1">Red</option>
+        <option value="2">Green (only 0)</option>
+      </select>
+      <button id="place-bet">Place bet</button>
+    </div>
+    <div>
+      Your balance <span id="current-balance"></span>
+    </div>
+    <h4>Your bets</h4>
+    <table id="bet-table">
+      <thead>
+        <tr>
+          <th>
+            Status
+          </th>
+          <th>
+            Number
+          </th>
+          <th>
+            Bet Color
+          </th>
+          <th>
+            Bet Amount
+          </th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.3.3/web3.min.js" integrity="sha512-ql9TIU/ceXazBCUvhuSt0fGBRbS0o1TveJQ7BO2pKpHv1xGScHgAYxQ9lvgiLiKxHBAjZpXVhnEqqRxSl3OlTQ==" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="abi.js"></script>
+    <script src="script.js"></script>
   </body>
 </html>
