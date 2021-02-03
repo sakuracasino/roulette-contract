@@ -1,5 +1,9 @@
 var contractAddress = '0x839355b443a7cf34d2ddcc5fb5a50b6e0894d3c8'; // ROPSTEN CONTRACT ADDRESS
 window.addEventListener('load', async () => {
+  document.getElementById('contract-link').setAttribute(
+    'href',
+    `https://ropsten.etherscan.io/address/${contractAddress}`
+  )
   // Modern dapp browsers...
   if (window.ethereum) {
       window.web3 = new Web3(ethereum);
