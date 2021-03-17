@@ -31,4 +31,11 @@ Additional commands:
 `make migrate` migrates the contracts into the ganache blockchain
 `make console` lauch a truffle console in the gananche node
 `make test` run tests
+`make deploy-ropsten` deploys the contract to the ropsten network
+```
+#### .env file
+Difine an .env for deployments on Ropsten and the main network
+```
+ROPSTEN_MNEMONIC='Your mnemonic'
+ROPSTEN_API='You api url + key'
 ```

@@ -17,3 +17,6 @@ compile:
 
 test:
 	./node_modules/.bin/truffle test --network ganache
+
+deploy-ropsten:
+	./node_modules/.bin/truffle deploy --network ropsten
