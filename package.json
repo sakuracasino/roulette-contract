@@ -12,13 +12,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@openzeppelin/contracts": "^4.0.0-rc.0",
     "@truffle/hdwallet-provider": "^1.2.1",
     "dotenv": "^8.2.0",
     "ganache-cli": "^6.12.2",
     "truffle": "^5.2.4"
   },
-  "dependencies": {
-    "@openzeppelin/contracts": "^3.4.1",
-    "openzeppelin-solidity": "^3.4.1"
-  }
+  "dependencies": {}
 }

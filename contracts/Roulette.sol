@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Roulette is ERC20 {
+    address public bet_token;
 
-    mapping (address => uint256) public shares_of;
-    uint256 public current_shares;
-    
     event Bet(string, address, uint, uint, uint256);
     
-    constructor() public ERC20("SAKURA_V1", "SV1") {
+    constructor(address _bet_token) public ERC20("SAKURA_V1", "SV1") {
         _mint(msg.sender, 0);
+        bet_token = _bet_token;
     }
     
     function receive() public payable {}
     
-    function addLiquidity() public payable {
-        require(msg.value > 0, "You didn't send any balance");
-        uint256 lx = msg.value;
-        uint256 l = address(this).balance - lx;
+    function addLiquidity(uint256 amount) public payable {
+        IERC20(bet_token).transferFrom(msg.sender, address(this), amount);
+        require(amount > 0, "You didn't send any balance");
+        uint256 lx = amount;
+        uint256 l = IERC20(bet_token).balanceOf(address(this)) - lx;
         if (l <= 0) {
           uint256 base_shares = 10**36;
           _mint(msg.sender, base_shares * lx);
@@ -35,21 +36,22 @@ contract Roulette is ERC20 {
     
     function removeLiquidity() public payable {
         require(balanceOf(msg.sender) > 0, "Your don't have liquidity");
-        uint256 current_funds = address(this).balance;
+        uint256 current_funds = IERC20(bet_token).balanceOf(address(this));
         uint256 sender_balance = balanceOf(msg.sender);
         uint256 sender_liquidity = (sender_balance * current_funds) / totalSupply();
-        payable(msg.sender).transfer(sender_liquidity);
         _burn(msg.sender, sender_balance);
+        IERC20(bet_token).transfer(msg.sender, sender_liquidity);
     }
     
     // 0: black
     // 1: red
     // 2: green
-    function betColor(uint color) public payable {
-        require(msg.value <= getMaxBet(), "Your bet exceeds the max allowed");
+    function betColor(uint color, uint256 amount) public payable {
+        IERC20(bet_token).transferFrom(msg.sender, address(this), amount);
+        require(amount <= getMaxBet(), "Your bet exceeds the max allowed");
         uint256 randomNumber = random() % 37;
         if ((randomNumber == 0 && color == 2) || (randomNumber % 2 == color)) {
-            payable(msg.sender).transfer(msg.value * 2);
+            IERC20(bet_token).transfer(msg.sender, amount * 2);
             emit Bet("WIN", address(msg.sender), msg.value, color, randomNumber);
             return;
         }
@@ -57,7 +59,7 @@ contract Roulette is ERC20 {
     }
     
     function getMaxBet() public view returns(uint) {
-        uint256 current_balance = address(this).balance;
+        uint256 current_balance = IERC20(bet_token).balanceOf(address(this));
         return current_balance / 10;
     }
 
