@@ -15,8 +15,12 @@
     "@openzeppelin/contracts": "^4.0.0-rc.0",
     "@truffle/hdwallet-provider": "^1.2.1",
     "dotenv": "^8.2.0",
+    "eip-712": "^0.4.3",
+    "eth-permit": "^0.1.9",
+    "ethereumjs-util": "^7.0.9",
     "ganache-cli": "^6.12.2",
-    "truffle": "^5.2.4"
+    "truffle": "^5.2.4",
+    "web3-utils": "^1.3.4"
   },
   "dependencies": {}
 }
