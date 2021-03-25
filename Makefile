@@ -1,13 +1,12 @@
 .PHONY: test run install console migrate compile
 
-TEST_ADDRESS="0x5fec42b462517CE7976ff6f88238bd360a457FD4"
-TEST_PRIVATE_KEY="0xba6dae424d337e171d6f610fdea86132c45f04f897bcfef91590b9a833c1fdca"
-
+file := .mnemonic
+MNEMONIC := $(shell cat ${file})
 install:
 	npm install
 
 run:
-	./node_modules/.bin/ganache-cli -e 5000 --port 8545 --unlock ${TEST_ADDRESS}
+	./node_modules/.bin/ganache-cli -e 5000 --port 8545 --mnemonic "$(MNEMONIC)"
 
 console:
 	./node_modules/.bin/truffle console --network ganache
