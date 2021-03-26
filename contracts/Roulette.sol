@@ -101,7 +101,9 @@ contract Roulette is ERC20 {
 
         collectToken(msg.sender, amount, deadline, v, r, s);
 
-        bytes32 requestId = getRandomNumber(randomSeed);
+        // TODO: Use Chainlink VRF for retrieving requestId
+        // bytes32 requestId = getRandomNumber(randomSeed);
+        bytes32 requestId = s;
         
         _rollRequestsSender[requestId] = msg.sender;
         _rollRequestsCompleted[requestId] = false;
