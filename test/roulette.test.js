@@ -310,9 +310,29 @@ contract('Roulette', async () => {
     });
   });
   describe('with mixed bets', async () => {
+    const wallet = wallets[4];
     describe('with predefined set #1', async () => {
       it('should return expected win', async () => {
-
+        const bets = [
+          {
+            betType: BetType.Color,
+            value: Color.Red,
+            amount: 3,
+          },
+          {
+            betType: BetType.Half,
+            value: 0,
+            amount: 4,
+          },
+        ];
+        await rouletteInteractor.rollBets(wallet, bets, 0); // LOSE
+        assert.equal(93, await daiMockInteractor.balanceOf(wallet.address));
+        await rouletteInteractor.rollBets(wallet, bets, 1); // +7
+        assert.equal(100, await daiMockInteractor.balanceOf(wallet.address));
+        await rouletteInteractor.rollBets(wallet, bets, 11); // +1
+        assert.equal(101, await daiMockInteractor.balanceOf(wallet.address));
+        await rouletteInteractor.rollBets(wallet, bets, 25); // -1
+        assert.equal(100, await daiMockInteractor.balanceOf(wallet.address));
       });
     });
     describe('with predefined set #2', async () => {
