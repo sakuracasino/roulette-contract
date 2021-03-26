@@ -6,17 +6,16 @@ Crypto Roulette
 - [x] Implement contract pooling
 - [x] Implement color betting with blockhash-based random 
 - [x] Implement tests for liquidity and bets
-- [ ] Deploy v0.1 in eth testnet
-- [ ] Implement v0.2: Chainlink VRF + blockhash for random
-- [ ] Implement v0.3: bet queue + Chainlink VRF
-- [ ] Implement v0.4: bet queue + RANDAO + Chainlink VRF
-- [ ] Investigate v0.5: bet queue + RANDAO + Custom oracle
-- [ ] Investigate v0.6: bet queue + RANDAO + blockhash delay?
-- [ ] Investigate implementations in POLKADOT/TRON/Binance-SmartChain 
-- [ ] Implement basic UI for providing liquidity and bets, use `.github.io` domain
-- [ ] Use correct contrains
-- [ ] Deploy v1.0b into testnets and stress test validations
-- [ ] Deploy v1.0stable into the mainnet
+- [x] Deploy v0.1 in eth testnet
+- [x] Implement v0.2: Implement all bets
+- [ ] Implement UI for providing liquidity and bets
+- [ ] Implement v0.3: Implement Chainlink VRF
+- [ ] Update UI to wait for VRF callback
+- [ ] Implement v0.4: Implement liquidity and max bet limits
+- [ ] Implement v0.5: Implement Chainlink VRF + bet queue
+- [ ] Deploy v1.0b into Matic or BSC testnet
+- [ ] Investigate implementations with BSC and Polkadot BABE VRF
+- [ ] Deploy v1.0stable into Matic or BSC mainnet 
 
 ### Running the project
 1. Run `make install` for installing node dependencies
