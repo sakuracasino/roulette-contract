@@ -12,14 +12,16 @@ function collapseTo18Decimals(n) {
 }
 
 module.exports = {
-  async addLiquidity(wallet, amount) {
+  async addLiquidity(wallet, _amount) {
     const roulette = await Roulette.deployed();
+    const amount = expandTo18Decimals(_amount).toString();
     return await roulette.addLiquidity(
+      amount,
       ...(await getPermitArgs({
         token: await daiMockInteractor.getToken(),
         spenderAddress: roulette.address,
         owner: wallet,
-        amount: expandTo18Decimals(amount).toString()
+        amount,
       }))
     );
   },
@@ -39,4 +41,18 @@ module.exports = {
     const roulette = await Roulette.deployed();
     return await daiMockInteractor.burn(roulette.address, amount);
   },
+  async rollBets(wallet, bets, randomSeed) {
+    const roulette = await Roulette.deployed();
+    const amount = bets.reduce((_amount, bet) => _amount + bet.amount, 0);
+    return await roulette.rollBets(
+      bets.map(bet => ({...bet, amount: expandTo18Decimals(bet.amount).toString()})),
+      randomSeed,
+      ...(await getPermitArgs({
+        token: await daiMockInteractor.getToken(),
+        spenderAddress: roulette.address,
+        owner: wallet,
+        amount: expandTo18Decimals(amount).toString()
+      }))
+    );
+  }
 };

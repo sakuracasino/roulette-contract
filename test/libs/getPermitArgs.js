@@ -67,5 +67,5 @@ module.exports = async function getPermitArgs({
     Buffer.from(owner.privateKey.slice(2), 'hex')
   );
 
-  return [amount, deadline, v, r, s, {from: owner.address}];
+  return [deadline, v, r, s, {from: owner.address}];
 };
