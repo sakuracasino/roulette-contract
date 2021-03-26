@@ -56,8 +56,6 @@ contract Roulette is ERC20 {
         }
     }
     
-    function receive() public payable {}
-    
     function addLiquidity(uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public {
         require(amount > 0, "You didn't send any balance");
 
