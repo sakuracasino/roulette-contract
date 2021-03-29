@@ -1,5 +1,5 @@
 const Roulette = artifacts.require("Roulette");
-const daimock = artifacts.require("daimock");
+const daimock = artifacts.require("DAIMock");
 
 module.exports = function(deployer) {
   deployer.deploy(daimock, web3.utils.toWei('0', 'ether')).then(

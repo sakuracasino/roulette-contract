@@ -1,5 +1,7 @@
-Crypto Roulette
+SakuraCasino Roulette
 ---
+[![CircleCI](https://circleci.com/gh/sakuracasino/roulette-contract.svg?style=svg)](https://circleci.com/gh/sakuracasino/roulette-contract)
+
 ![](https://github.com/ivandiazwm/crypto-roulette/blob/master/preview.jpg?raw=true)
 
 ### Checklist

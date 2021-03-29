@@ -1,0 +1,32 @@
+version: 2.1
+jobs:
+  test:
+    parameters:
+      mnemonic:
+        type: string
+    docker:
+      - image: circleci/node:11.15.0-stretch
+      - image: trufflesuite/ganache-cli
+        command: ganache-cli -e 5000 --port 8545 --mnemonic "<< parameters.mnemonic >>"
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+          - v3-dependencies-{{ checksum "package-lock.json" }}
+
+      - run: make install
+
+      - save_cache:
+          paths:
+            - node_modules
+            - ~/.cache
+          key: v3-dependencies-{{ checksum "package-lock.json" }}
+
+      - run: make test
+workflows:
+  version: 2
+  build-n-deploy:
+    jobs:
+      - test:
+          mnemonic: "argue lava dirt capable inside firm talent valley ceiling artist need property allow cargo rapid"
