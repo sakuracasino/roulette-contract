@@ -32,4 +32,4 @@ deploy-kovan:
 publish:
 	make compile
 	node package-builder.js
-	npm publish
+	npm publish --access public

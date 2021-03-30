@@ -1,7 +1,7 @@
 require('dotenv').config()
 const networks = require('./networks');
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-var network;
+let network = {};
 
 if (process.env.NETWORK) {
   network = networks.find(network => network.network == process.env.NETWORK);
