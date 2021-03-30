@@ -1,5 +1,14 @@
 require('dotenv').config()
+const networks = require('./networks');
 const HDWalletProvider = require("@truffle/hdwallet-provider");
+var network;
+
+if (process.env.NETWORK) {
+  network = networks.find(network => network.network == process.env.NETWORK);
+  if(!network) {
+    throw 'Invalid network name';
+  }
+}
 
 module.exports = {
   // Uncommenting the defaults below 
@@ -14,18 +23,14 @@ module.exports = {
       port: 8545,
       network_id: "*" 
     },
-    ropsten: {
+    live: {
       provider: function() {
-        return new HDWalletProvider(process.env.ROPSTEN_MNEMONIC, process.env.ROPSTEN_API)
+        return new HDWalletProvider(process.env.DEPLOY_MNEMONIC, process.env.DEPLOY_API)
       },
-      network_id: 3,
-      gas: 4000000
+      chain_id: network.chain_id,
+      network_id: network.network,
+      gas: 8000000
     }
-  //  test: {
-  //    host: "127.0.0.1",
-  //    port: 7545,
-  //    network_id: "*"
-  //  }
   },
   compilers: {
     solc: {

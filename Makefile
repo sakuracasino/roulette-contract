@@ -17,8 +17,19 @@ migrate:
 compile:
 	./node_modules/.bin/truffle compile
 
+flatten:
+	./node_modules/.bin/truffle-flattener ./contracts/Roulette.sol > ./contracts/_Roulette.sol
+
 test:
 	./node_modules/.bin/truffle test --network ganache
 
-deploy-ropsten:
-	./node_modules/.bin/truffle deploy --network ropsten
+deploy-live:
+	./node_modules/.bin/truffle deploy --network live
+
+deploy-kovan:
+	NETWORK=kovan make deploy-live
+
+publish:
+	make compile
+	node package-builder.js
+	npm publish
