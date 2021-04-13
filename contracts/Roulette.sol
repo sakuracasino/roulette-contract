@@ -21,7 +21,6 @@ enum Color {
     Black
 }
 
-
 contract Roulette is ERC20 {
     struct Bet {
         BetType betType;
@@ -32,6 +31,7 @@ contract Roulette is ERC20 {
     mapping (bytes32 => uint256[3][]) _rollRequestsBets;
     mapping (bytes32 => bool) _rollRequestsCompleted;
     mapping (bytes32 => address) _rollRequestsSender;
+    mapping (bytes32 => uint8) _rollRequestsResults;
 
     uint256 public BASE_SHARES = uint256(10) ** 36;
     address public bet_token;
@@ -41,7 +41,8 @@ contract Roulette is ERC20 {
         1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36
     ];
 
-    event BetResult(address from, uint256 randomResult, uint256 payout);
+    event BetRequest(bytes32 requestId, address sender);
+    event BetResult(bytes32 requestId, uint256 randomResult, uint256 payout);
 
     constructor(address _bet_token) public ERC20("SAKURA_V1", "SV1") {
         bet_token = _bet_token;
@@ -55,7 +56,7 @@ contract Roulette is ERC20 {
             COLORS[RED_NUMBERS[i]] = Color.Red;
         }
     }
-    
+
     function addLiquidity(uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public {
         require(amount > 0, "You didn't send any balance");
 
@@ -102,6 +103,7 @@ contract Roulette is ERC20 {
         // TODO: Use Chainlink VRF for retrieving requestId
         // bytes32 requestId = getRandomNumber(randomSeed);
         bytes32 requestId = s;
+        emit BetRequest(requestId, msg.sender);
         
         _rollRequestsSender[requestId] = msg.sender;
         _rollRequestsCompleted[requestId] = false;
@@ -139,7 +141,6 @@ contract Roulette is ERC20 {
                 continue;
             }
             if (betType == BetType.Color && uint8(COLORS[result]) == betValue) {
-                emit BetResult(_rollRequestsSender[requestId], result, betValue);
                 amount += betAmount * 2;
                 continue;
             }
@@ -161,12 +162,13 @@ contract Roulette is ERC20 {
             }
         }
 
+        _rollRequestsResults[requestId] = result;
         _rollRequestsCompleted[requestId] = true;
         if (amount > 0) {
             IERC20(bet_token).transfer(_rollRequestsSender[requestId], amount);
         }
 
-        emit BetResult(_rollRequestsSender[requestId], result, amount);
+        emit BetResult(requestId, result, amount);
     }
     
     function getMaxBet() public view returns(uint) {
@@ -190,5 +192,21 @@ contract Roulette is ERC20 {
         )));
         
         return (seed - ((seed / 1000) * 1000));
+    }
+
+    function isRequestCompleted(bytes32 requestId) public view returns(bool) {
+        return _rollRequestsCompleted[requestId];
+    }
+
+    function requesterOf(bytes32 requestId) public view returns(address) {
+        return _rollRequestsSender[requestId];
+    }
+
+    function resultOf(bytes32 requestId) public view returns(uint8) {
+        return _rollRequestsResults[requestId];
+    }
+
+    function betsOf(bytes32 requestId) public view returns(address) {
+        return _rollRequestsSender[requestId];
     }
 }

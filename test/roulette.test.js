@@ -1,7 +1,6 @@
 const wallets = require('./libs/wallets');
 const rouletteInteractor = require('./libs/rouletteInteractor');
 const daiMockInteractor = require('./libs/daiMockInteractor');
-const { before } = require('lodash');
 
 const BetType = {
   'Number': 0,

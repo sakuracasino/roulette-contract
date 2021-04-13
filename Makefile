@@ -6,7 +6,7 @@ install:
 	npm install
 
 run:
-	./node_modules/.bin/ganache-cli -e 5000 --port 8545 --mnemonic "$(MNEMONIC)"
+	./node_modules/.bin/ganache-cli -e 5000 --port 8545 --mnemonic "$(MNEMONIC)" --chainId 1
 
 console:
 	./node_modules/.bin/truffle console --network ganache
