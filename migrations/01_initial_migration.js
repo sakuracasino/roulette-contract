@@ -22,13 +22,16 @@ module.exports = async function(deployer, environment) {
       fee
     );
 
-    await daiToken.mint(roulette.address, web3.utils.toWei('100000', 'ether'));
+    if (process.env.INITIAL_LIQUIDITY) {
+      await daiToken.mint(roulette.address, web3.utils.toWei(process.env.INITIAL_LIQUIDITY, 'ether'));
+    }
     await linkToken.transfer(roulette.address, web3.utils.toWei('100000', 'ether'));
 
     console.log(colors.cyan('Copy paste these varaibles into your frontend .env file'));
     console.log(colors.cyan('============================================'));
     console.log(`BET_TOKEN_ADDRESS='${daiToken.address}'`);
     console.log(`ROULETTE_ADDRESS='${roulette.address}'`);
+    console.log(colors.cyan('============================================'));
   } else {
     throw 'Invalid network';
     // TODO: Figure out automated deployments

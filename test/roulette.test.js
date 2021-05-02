@@ -132,7 +132,7 @@ contract('Roulette', async () => {
       await rouletteInteractor.removeLiquidity(wallet3);
       assert.equal(226, await daiMockInteractor.balanceOf(wallet2.address));
       assert.equal(226, await daiMockInteractor.balanceOf(wallet3.address));
-    });  
+    });
   });
   describe('with single bets', async () => {
     const wallet = wallets[4];

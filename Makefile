@@ -12,7 +12,7 @@ console:
 	./node_modules/.bin/truffle console --network ganache
 
 migrate:
-	./node_modules/.bin/truffle migrate --network ganache --reset
+	INITIAL_LIQUIDITY='10000' ./node_modules/.bin/truffle migrate --network ganache --reset
 
 compile:
 	./node_modules/.bin/truffle compile
@@ -20,7 +20,7 @@ compile:
 flatten:
 	./node_modules/.bin/truffle-flattener ./contracts/Roulette.sol > ./contracts/_Roulette.sol
 
-test:
+test: compile
 	./node_modules/.bin/truffle test --network ganache
 
 vrfsigner:

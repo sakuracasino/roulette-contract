@@ -1,7 +1,25 @@
 const { bigNumberify } = require('ethers/utils');
+const Web3 = require('web3');
+const fs = require('fs');
 const getPermitArgs = require('./getPermitArgs');
 const Roulette = artifacts.require('Roulette');
+const VRFCoordinatorMock = artifacts.require('VRFCoordinatorMock');
 const daiMockInteractor = require('./daiMockInteractor');
+
+const web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545'));
+const rouletteJSON = JSON.parse(fs.readFileSync('./build/contracts/Roulette.json', 'utf8'));  
+const rouletteWeb3 = new web3.eth.Contract(rouletteJSON.abi,Roulette.address);
+
+async function signLastBlockVRFRequest(value) {
+  const vrfCoordinator = await VRFCoordinatorMock.deployed();
+  const previousRequests = await rouletteWeb3.getPastEvents('BetRequest', {fromBlock: 'latest', toBlock: 'latest'});
+  for (let i = 0; i < previousRequests.length; i++) {
+    const requestId = previousRequests[i].returnValues.requestId;
+    if (!(await rouletteWeb3.methods.isRequestCompleted(requestId).call())) {
+      await vrfCoordinator.callBackWithRandomness(requestId, value, Roulette.address);
+    }
+  }
+}
 
 function expandTo18Decimals(n) {
   return bigNumberify(n).mul(bigNumberify(10).pow(18))
@@ -44,7 +62,7 @@ module.exports = {
   async rollBets(wallet, bets, randomSeed) {
     const roulette = await Roulette.deployed();
     const amount = bets.reduce((_amount, bet) => _amount + bet.amount, 0);
-    return await roulette.rollBets(
+    await roulette.rollBets(
       bets.map(bet => ({...bet, amount: expandTo18Decimals(bet.amount).toString()})),
       randomSeed,
       ...(await getPermitArgs({
@@ -54,5 +72,6 @@ module.exports = {
         amount: expandTo18Decimals(amount).toString()
       }))
     );
+    await signLastBlockVRFRequest(randomSeed);    
   }
 };
