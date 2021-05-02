@@ -4,6 +4,7 @@ const daiMock = artifacts.require("DAIMock");
 const linkTokenMock = artifacts.require("LinkToken");
 const VRFCoordinatorMock = artifacts.require("VRFCoordinatorMock");
 
+console.log
 module.exports = async function(deployer, environment) {
   if (environment === 'ganache') {
     const fee = '100000000000000000';

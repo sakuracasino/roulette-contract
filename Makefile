@@ -24,7 +24,7 @@ test:
 	./node_modules/.bin/truffle test --network ganache
 
 vrfsigner:
-	./node_modules/.bin/truffle exec ./ripts/vrf-signer-mock.js --network ganache
+	./node_modules/.bin/truffle exec ./scripts/vrf-signer-mock.js --network ganache
 
 publish:
 	make compile
