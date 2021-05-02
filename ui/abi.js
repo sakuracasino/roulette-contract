@@ -165,4 +165,4 @@ var abi = [
     "stateMutability": "view",
     "type": "function"
   }
-];4
+];

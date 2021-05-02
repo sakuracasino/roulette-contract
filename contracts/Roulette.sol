@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
+import "@chainlink/contracts/src/v0.8/dev/VRFConsumerBase.sol";
 
 enum BetType {
     Number,
@@ -21,7 +22,7 @@ enum Color {
     Black
 }
 
-contract Roulette is ERC20 {
+contract Roulette is VRFConsumerBase, ERC20 {
     struct Bet {
         BetType betType;
         uint8 value;
@@ -44,7 +45,21 @@ contract Roulette is ERC20 {
     event BetRequest(bytes32 requestId, address sender);
     event BetResult(bytes32 requestId, uint256 randomResult, uint256 payout);
 
-    constructor(address _bet_token) public ERC20("SAKURA_V1", "SV1") {
+    // Chainlink VRF Data
+    bytes32 internal keyHash;
+    uint256 internal fee;
+    uint256 public randomResult;
+    event RequestedRandomness(bytes32 requestId);
+
+    constructor(
+        address _bet_token,
+        address _vrfCoordinator,
+        address _link,
+        bytes32 _keyHash,
+        uint _fee
+    )  ERC20("SAKURA_V1", "SV1") VRFConsumerBase(_vrfCoordinator, _link) public {
+        keyHash = _keyHash;
+        fee = _fee; 
         bet_token = _bet_token;
 
         // Set up colors
@@ -101,8 +116,8 @@ contract Roulette is ERC20 {
         collectToken(msg.sender, amount, deadline, v, r, s);
 
         // TODO: Use Chainlink VRF for retrieving requestId
-        // bytes32 requestId = getRandomNumber(randomSeed);
-        bytes32 requestId = s;
+        bytes32 requestId = getRandomNumber(randomSeed);
+        // bytes32 requestId = s;
         emit BetRequest(requestId, msg.sender);
         
         _rollRequestsSender[requestId] = msg.sender;
@@ -110,19 +125,16 @@ contract Roulette is ERC20 {
         for (uint i; i < bets.length; i++) {
             _rollRequestsBets[requestId].push([uint256(bets[i].betType), uint256(bets[i].value), uint256(bets[i].amount)]);
         }
-
-        // TODO: remove this line and replace it with Chainlink VRF
-        fulfillRandomness(requestId, randomSeed);
     }
 
-    function getRandomNumber(uint256 userProvidedSeed) public view returns (bytes32 requestId) {
-        // TODO: Use Chainlink VRF
-        // require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
-        // return requestRandomness(keyHash, fee, userProvidedSeed);
-        return bytes32(random(userProvidedSeed));
+    function getRandomNumber(uint256 userProvidedSeed) public returns (bytes32 requestId) {
+        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
+        bytes32 _requestId = requestRandomness(keyHash, fee, userProvidedSeed);
+        emit RequestedRandomness(_requestId);
+        return _requestId;
     }
 
-    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal {
+    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
         require(_rollRequestsCompleted[requestId] == false);
         uint8 result = uint8(randomness % 37);
         uint256[3][] memory bets = _rollRequestsBets[requestId];
@@ -181,19 +193,6 @@ contract Roulette is ERC20 {
         IERC20(bet_token).transferFrom(sender, address(this), amount);
     }
 
-    // TODO: replace with Chainlink VRF
-    function random(uint256 userProvidedSeed) private view returns(uint256) {
-        uint256 seed = uint256(keccak256(abi.encodePacked(
-            userProvidedSeed + block.timestamp + block.difficulty +
-            ((uint256(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +
-            block.gaslimit + 
-            ((uint256(keccak256(abi.encodePacked(msg.sender)))) / (block.timestamp)) +
-            block.number
-        )));
-        
-        return (seed - ((seed / 1000) * 1000));
-    }
-
     function isRequestCompleted(bytes32 requestId) public view returns(bool) {
         return _rollRequestsCompleted[requestId];
     }
@@ -206,7 +205,17 @@ contract Roulette is ERC20 {
         return _rollRequestsResults[requestId];
     }
 
-    function betsOf(bytes32 requestId) public view returns(address) {
-        return _rollRequestsSender[requestId];
+    function betsOf(bytes32 requestId) public view returns(uint256[3][] memory) {
+        return _rollRequestsBets[requestId];
+    }
+    
+    /**
+     * Withdraw LINK from this contract
+     * 
+     * DO NOT USE THIS IN PRODUCTION AS IT CAN BE CALLED BY ANY ADDRESS.
+     * THIS IS PURELY FOR EXAMPLE PURPOSES.
+     */
+    function withdrawLink() external {
+        require(LINK.transfer(msg.sender, LINK.balanceOf(address(this))), "Unable to transfer");
     }
 }

@@ -23,13 +23,10 @@ flatten:
 test:
 	./node_modules/.bin/truffle test --network ganache
 
-deploy-live:
-	./node_modules/.bin/truffle deploy --network live
-
-deploy-kovan:
-	NETWORK=kovan make deploy-live
+vrfsigner:
+	./node_modules/.bin/truffle exec ./ripts/vrf-signer-mock.js --network ganache
 
 publish:
 	make compile
-	node package-builder.js
+	node scripts/package-builder.js
 	npm publish --access public

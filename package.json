@@ -14,9 +14,12 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@openzeppelin/contracts": "^4.0.0-rc.0",
+    "@ethersproject/contracts": "^5.1.1",
+    "@openzeppelin/contracts": "^4.0.0",
+    "@solidity-parser/parser": "^0.12.2",
     "@truffle/hdwallet-provider": "^1.2.1",
     "bip39": "^3.0.3",
+    "colors": "^1.4.0",
     "dotenv": "^8.2.0",
     "eip-712": "^0.4.3",
     "ethereumjs-util": "^7.0.9",
@@ -26,5 +29,9 @@
     "truffle": "^5.2.4",
     "truffle-flattener": "^1.5.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@chainlink/contracts": "^0.1.7",
+    "@chainlink/token": "^1.1.0",
+    "web3": "^1.3.5"
+  }
 }
