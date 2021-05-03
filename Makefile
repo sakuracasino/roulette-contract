@@ -12,7 +12,7 @@ console:
 	./node_modules/.bin/truffle console --network ganache
 
 migrate:
-	INITIAL_LIQUIDITY='10000' ./node_modules/.bin/truffle migrate --network ganache --reset
+	INITIAL_LIQUIDITY='100000' ./node_modules/.bin/truffle migrate --network ganache --reset
 
 compile:
 	./node_modules/.bin/truffle compile

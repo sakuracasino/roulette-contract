@@ -36,6 +36,7 @@ contract Roulette is VRFConsumerBase, ERC20 {
 
     uint256 public BASE_SHARES = uint256(10) ** 36;
     address public bet_token;
+    uint256 public max_bet;
 
     mapping (uint8 => Color) COLORS;
     uint8[18] private RED_NUMBERS = [
@@ -61,6 +62,7 @@ contract Roulette is VRFConsumerBase, ERC20 {
         keyHash = _keyHash;
         fee = _fee; 
         bet_token = _bet_token;
+        max_bet = 10**20;
 
         // Set up colors
         COLORS[0] = Color.Green;
@@ -115,9 +117,7 @@ contract Roulette is VRFConsumerBase, ERC20 {
 
         collectToken(msg.sender, amount, deadline, v, r, s);
 
-        // TODO: Use Chainlink VRF for retrieving requestId
         bytes32 requestId = getRandomNumber(randomSeed);
-        // bytes32 requestId = s;
         emit BetRequest(requestId, msg.sender);
         
         _rollRequestsSender[requestId] = msg.sender;
@@ -183,9 +183,8 @@ contract Roulette is VRFConsumerBase, ERC20 {
         emit BetResult(requestId, result, amount);
     }
     
-    function getMaxBet() public view returns(uint) {
-        uint256 current_balance = IERC20(bet_token).balanceOf(address(this));
-        return current_balance / 10;
+    function getMaxBet() public view returns(uint256) {
+        return max_bet;
     }
 
     function collectToken(address sender, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) private {

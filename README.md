@@ -29,10 +29,16 @@ console.log(networks[0].contract_address); // returns the contract address in th
 - [x] Implement UI for bets
 - [x] Implement Chainlink VRF
 - [x] Update UI to wait for VRF callback
-- [ ] Revision liquidity and max bet limits
+- [ ] Improve contact storage management, delete unused data. Use mainly events.
+- [ ] Implement bet limit
+- [ ] Implement bet fee
+- [ ] Implement correct DAI permit interface
+- [ ] Revision liquidity and max bet limits security
+- [ ] Alow for non-EIP-2612 tokens
 - [ ] Implement Chainlink VRF + bet queue
+- [ ] Migrate dev environment to Hardhat
 - [ ] Deploy v1.0b into Matic or BSC testnets
-- [ ] Investigate implementations with BSC and Polkadot BABE VRF
+- [ ] Investigate implementations with ETH 2.0 Bacon chain VDF and Polkadot BABE VRF
 - [ ] Deploy v1.0stable into Matic or BSC mainnet
 
 ### Running the project
