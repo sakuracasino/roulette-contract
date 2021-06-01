@@ -82,14 +82,14 @@ contract Roulette is VRFConsumerBase, ERC20 {
 
         uint256 added_liquidity = amount;
         uint256 current_liquidity = IERC20(bet_token).balanceOf(address(this)) - added_liquidity;
+        uint256 current_shares = totalSupply();
 
-        if (current_liquidity <= 0) {
+        if (current_shares <= 0) {
             _mint(msg.sender, BASE_SHARES * added_liquidity);
             return;
         }
 
-        uint256 current_shares = totalSupply();
-        uint256 new_shares = (added_liquidity * current_shares) / current_liquidity;
+        uint256 new_shares = added_liquidity * (current_shares / current_liquidity);
         
         _mint(msg.sender, new_shares);
     }
