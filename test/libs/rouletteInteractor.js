@@ -1,6 +1,7 @@
-const { bigNumberify } = require('ethers/utils');
 const Web3 = require('web3');
 const fs = require('fs');
+const { getDeployerWallet } = require('./wallets');
+const { expandTo18Decimals, collapseTo18Decimals } = require('./decimals');
 const getPermitArgs = require('./getPermitArgs');
 const Roulette = artifacts.require('Roulette');
 const VRFCoordinatorMock = artifacts.require('VRFCoordinatorMock');
@@ -19,14 +20,6 @@ async function signLastBlockVRFRequest(value) {
       await vrfCoordinator.callBackWithRandomness(requestId, value, Roulette.address);
     }
   }
-}
-
-function expandTo18Decimals(n) {
-  return bigNumberify(n).mul(bigNumberify(10).pow(18))
-}
-
-function collapseTo18Decimals(n) {
-  return bigNumberify(n).div(bigNumberify(10).pow(18))
 }
 
 module.exports = {
@@ -53,15 +46,18 @@ module.exports = {
   },
   async mintDAI(amount) {
     const roulette = await Roulette.deployed();
-    return await daiMockInteractor.mint(roulette.address, amount);
+    await daiMockInteractor.mint(roulette.address, amount);
+    return await roulette.forceAddLiquidity(expandTo18Decimals(amount).toString(), {from: getDeployerWallet().address});
   },
   async burnDai(amount) {
     const roulette = await Roulette.deployed();
-    return await daiMockInteractor.burn(roulette.address, amount);
+    await daiMockInteractor.burn(roulette.address, amount);
+    return await roulette.forceRemoveLiquidity(expandTo18Decimals(amount).toString(), {from: getDeployerWallet().address});
   },
-  async rollBets(wallet, bets, randomSeed) {
+  async rollBets(wallet, bets, randomSeed, _fee = 0) {
     const roulette = await Roulette.deployed();
     const amount = bets.reduce((_amount, bet) => _amount + bet.amount, 0);
+    const fee = _fee || (await this.getBetFee());
     await roulette.rollBets(
       bets.map(bet => ({...bet, amount: expandTo18Decimals(bet.amount).toString()})),
       randomSeed,
@@ -69,9 +65,26 @@ module.exports = {
         token: await daiMockInteractor.getToken(),
         spenderAddress: roulette.address,
         owner: wallet,
-        amount: expandTo18Decimals(amount).toString()
+        amount: expandTo18Decimals(amount + fee).toString()
       }))
     );
     await signLastBlockVRFRequest(randomSeed);    
-  }
+  },
+  async setBetFee(amount) {
+    const roulette = await Roulette.deployed();
+    return await roulette.setBetFee(expandTo18Decimals(amount), {from: getDeployerWallet().address});
+  },
+  async getBetFee() {
+    const roulette = await Roulette.deployed();
+    const betFee = await roulette.getBetFee();
+    return collapseTo18Decimals(betFee);
+  },
+  async withdrawFees() {
+    const roulette = await Roulette.deployed();
+    return await roulette.withdrawFees({from: getDeployerWallet().address});
+  },
+  async getCollectedFees() {
+    const roulette = await Roulette.deployed();
+    return collapseTo18Decimals(await roulette.getCollectedFees());
+  },
 };

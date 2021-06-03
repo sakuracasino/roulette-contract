@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/dev/VRFConsumerBase.sol";
 
 enum BetType {
@@ -22,7 +23,7 @@ enum Color {
     Black
 }
 
-contract Roulette is VRFConsumerBase, ERC20 {
+contract Roulette is VRFConsumerBase, ERC20, Ownable {
     struct Bet {
         BetType betType;
         uint8 value;
@@ -34,9 +35,12 @@ contract Roulette is VRFConsumerBase, ERC20 {
     mapping (bytes32 => address) _rollRequestsSender;
     mapping (bytes32 => uint8) _rollRequestsResults;
 
-    uint256 public BASE_SHARES = uint256(10) ** 36;
+    uint256 BASE_SHARES = uint256(10) ** 18;
+    uint256 public current_liquidity = 0;
+    uint256 public collected_fees = 0;
     address public bet_token;
     uint256 public max_bet;
+    uint256 public bet_fee;
 
     mapping (uint8 => Color) COLORS;
     uint8[18] private RED_NUMBERS = [
@@ -63,6 +67,7 @@ contract Roulette is VRFConsumerBase, ERC20 {
         fee = _fee; 
         bet_token = _bet_token;
         max_bet = 10**20;
+        bet_fee = 0;
 
         // Set up colors
         COLORS[0] = Color.Green;
@@ -81,26 +86,27 @@ contract Roulette is VRFConsumerBase, ERC20 {
         collectToken(msg.sender, amount, deadline, v, r, s);
 
         uint256 added_liquidity = amount;
-        uint256 current_liquidity = IERC20(bet_token).balanceOf(address(this)) - added_liquidity;
         uint256 current_shares = totalSupply();
 
         if (current_shares <= 0) {
+            current_liquidity += added_liquidity;
             _mint(msg.sender, BASE_SHARES * added_liquidity);
             return;
         }
 
-        uint256 new_shares = added_liquidity * (current_shares / current_liquidity);
-        
+        uint256 new_shares = (added_liquidity * current_shares) / current_liquidity;
+        current_liquidity += added_liquidity;
+
         _mint(msg.sender, new_shares);
     }
     
     function removeLiquidity() public payable {
         require(balanceOf(msg.sender) > 0, "Your don't have liquidity");
 
-        uint256 current_liquidity = IERC20(bet_token).balanceOf(address(this));
         uint256 sender_shares = balanceOf(msg.sender);
         uint256 sender_liquidity = (sender_shares * current_liquidity) / totalSupply();
 
+        current_liquidity -= sender_liquidity;
         _burn(msg.sender, sender_shares);
         IERC20(bet_token).transfer(msg.sender, sender_liquidity);
     }
@@ -115,7 +121,9 @@ contract Roulette is VRFConsumerBase, ERC20 {
 
         require(amount <= getMaxBet(), "Your bet exceeds the max allowed");
 
-        collectToken(msg.sender, amount, deadline, v, r, s);
+        collectToken(msg.sender, amount + bet_fee, deadline, v, r, s);
+        current_liquidity += amount;
+        collected_fees += bet_fee;
 
         bytes32 requestId = getRandomNumber(randomSeed);
         emit BetRequest(requestId, msg.sender);
@@ -178,6 +186,7 @@ contract Roulette is VRFConsumerBase, ERC20 {
         _rollRequestsCompleted[requestId] = true;
         if (amount > 0) {
             IERC20(bet_token).transfer(_rollRequestsSender[requestId], amount);
+            current_liquidity -= amount;
         }
 
         emit BetResult(requestId, result, amount);
@@ -207,14 +216,48 @@ contract Roulette is VRFConsumerBase, ERC20 {
     function betsOf(bytes32 requestId) public view returns(uint256[3][] memory) {
         return _rollRequestsBets[requestId];
     }
+
+    function getCurrentLiquidity() public view returns(uint256) {
+        return current_liquidity;
+    }
+
+    function getBetFee() public view returns(uint256) {
+        return bet_fee;
+    }
     
+    function setBetFee(uint256 _bet_fee) public onlyOwner {
+        bet_fee = _bet_fee;
+    }
+
+    function getCollectedFees() public view returns(uint256) {
+        return collected_fees;
+    }
+
+    function withdrawFees() public onlyOwner {
+        uint256 _collected_fees = collected_fees;
+        collected_fees = 0;
+        IERC20(bet_token).transfer(owner(), _collected_fees);
+    }
+
+    /**
+     * Modfies current liquidity intentionally
+     * DO NOT USE IN PRODUCTION,
+     * IT IS INTENDED FOR TESTING
+     */
+    function forceAddLiquidity(uint256 amount) public {
+        current_liquidity += amount;
+    }
+    function forceRemoveLiquidity(uint256 amount) public {
+        current_liquidity -= amount;
+    }
+
     /**
      * Withdraw LINK from this contract
      * 
      * DO NOT USE THIS IN PRODUCTION AS IT CAN BE CALLED BY ANY ADDRESS.
      * THIS IS PURELY FOR EXAMPLE PURPOSES.
      */
-    function withdrawLink() external {
+    function withdrawLink() external onlyOwner {
         require(LINK.transfer(msg.sender, LINK.balanceOf(address(this))), "Unable to transfer");
     }
 }

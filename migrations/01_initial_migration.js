@@ -4,7 +4,6 @@ const daiMock = artifacts.require("DAIMock");
 const linkTokenMock = artifacts.require("LinkToken");
 const VRFCoordinatorMock = artifacts.require("VRFCoordinatorMock");
 
-console.log
 module.exports = async function(deployer, environment) {
   if (environment === 'ganache') {
     const fee = '100000000000000000';
@@ -23,8 +22,11 @@ module.exports = async function(deployer, environment) {
     );
 
     if (process.env.INITIAL_LIQUIDITY) {
-      await daiToken.mint(roulette.address, web3.utils.toWei(process.env.INITIAL_LIQUIDITY, 'ether'));
+      const intialLiquidity = web3.utils.toWei(process.env.INITIAL_LIQUIDITY, 'ether');
+      await daiToken.mint(roulette.address, intialLiquidity);
+      await roulette.forceAddLiquidity(intialLiquidity);
     }
+    await roulette.setBetFee(web3.utils.toWei('0.01', 'ether'));
     await linkToken.transfer(roulette.address, web3.utils.toWei('100000', 'ether'));
 
     console.log(colors.cyan('Copy paste these varaibles into your frontend .env file'));
