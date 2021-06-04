@@ -1,6 +1,6 @@
 const colors = require('colors/safe');
 const Roulette = artifacts.require("Roulette");
-const daiMock = artifacts.require("DAIMock");
+const daiMock = artifacts.require("Dai");
 const linkTokenMock = artifacts.require("LinkToken");
 const VRFCoordinatorMock = artifacts.require("VRFCoordinatorMock");
 
@@ -9,31 +9,32 @@ module.exports = async function(deployer, environment) {
     const fee = '100000000000000000';
     const keyHash = '0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4';
 
-    const daiToken = await deployer.deploy(daiMock, await web3.utils.toWei('0', 'ether'));
-    const linkToken = await deployer.deploy(linkTokenMock);
-    const vrfCoordinator = await deployer.deploy(VRFCoordinatorMock, linkToken.address);
-    const roulette = await deployer.deploy(
-      Roulette,
-      daiToken.address,
-      vrfCoordinator.address,
-      linkToken.address,
-      keyHash,
-      fee
-    );
-
-    if (process.env.INITIAL_LIQUIDITY) {
-      const intialLiquidity = web3.utils.toWei(process.env.INITIAL_LIQUIDITY, 'ether');
-      await daiToken.mint(roulette.address, intialLiquidity);
-      await roulette.forceAddLiquidity(intialLiquidity);
-    }
-    await roulette.setBetFee(web3.utils.toWei('0.01', 'ether'));
-    await linkToken.transfer(roulette.address, web3.utils.toWei('100000', 'ether'));
-
-    console.log(colors.cyan('Copy paste these varaibles into your frontend .env file'));
-    console.log(colors.cyan('============================================'));
-    console.log(`BET_TOKEN_ADDRESS='${daiToken.address}'`);
-    console.log(`ROULETTE_ADDRESS='${roulette.address}'`);
-    console.log(colors.cyan('============================================'));
+    await deployer.deploy(daiMock, '1').then(async (daiToken) => {
+      const linkToken = await deployer.deploy(linkTokenMock);
+      const vrfCoordinator = await deployer.deploy(VRFCoordinatorMock, linkToken.address);
+      const roulette = await deployer.deploy(
+        Roulette,
+        daiToken.address,
+        vrfCoordinator.address,
+        linkToken.address,
+        keyHash,
+        fee
+      );
+  
+      if (process.env.INITIAL_LIQUIDITY) {
+        const intialLiquidity = web3.utils.toWei(process.env.INITIAL_LIQUIDITY, 'ether');
+        await daiToken.mint(roulette.address, intialLiquidity);
+        await roulette.forceAddLiquidity(intialLiquidity);
+      }
+      await roulette.setBetFee(web3.utils.toWei('0.01', 'ether'));
+      await linkToken.transfer(roulette.address, web3.utils.toWei('100000', 'ether'));
+  
+      console.log(colors.cyan('Copy paste these varaibles into your frontend .env file'));
+      console.log(colors.cyan('============================================'));
+      console.log(`BET_TOKEN_ADDRESS='${daiToken.address}'`);
+      console.log(`ROULETTE_ADDRESS='${roulette.address}'`);
+      console.log(colors.cyan('============================================'));  
+    }).catch((e) => console.error(e));
   } else {
     throw 'Invalid network';
     // TODO: Figure out automated deployments

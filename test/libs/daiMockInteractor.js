@@ -1,5 +1,5 @@
 const { expandTo18Decimals, collapseTo18Decimals } = require('./decimals');
-const DAIMock = artifacts.require('DAIMock');
+const DAIMock = artifacts.require('Dai');
 
 module.exports = {
   async balanceOf(address) {

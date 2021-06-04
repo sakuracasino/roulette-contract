@@ -4,9 +4,13 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/dev/VRFConsumerBase.sol";
+
+interface DAIPermit {
+    function permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) external;
+}
+
 
 enum BetType {
     Number,
@@ -79,11 +83,11 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         }
     }
 
-    function addLiquidity(uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public {
+    function addLiquidity(uint256 amount, uint256 nonce, uint expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) public {
         require(amount > 0, "You didn't send any balance");
 
         // Collect ERC-20 tokens
-        collectToken(msg.sender, amount, deadline, v, r, s);
+        collectToken(msg.sender, amount, nonce, expiry, allowed, v, r, s);
 
         uint256 added_liquidity = amount;
         uint256 current_shares = totalSupply();
@@ -99,7 +103,11 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
 
         _mint(msg.sender, new_shares);
     }
-    
+
+    function addLiquidity(uint256 amount) public {
+        addLiquidity(amount, 0, 0, false, 0, 0, 0);
+    }
+
     function removeLiquidity() public payable {
         require(balanceOf(msg.sender) > 0, "Your don't have liquidity");
 
@@ -111,7 +119,7 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         IERC20(bet_token).transfer(msg.sender, sender_liquidity);
     }
 
-    function rollBets(Bet[] memory bets, uint256 randomSeed, uint deadline, uint8 v, bytes32 r, bytes32 s) public {
+    function rollBets(Bet[] memory bets, uint256 randomSeed, uint256 nonce, uint expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) public {
         uint256 amount = 0;
 
         for (uint index = 0; index < bets.length; index++) {
@@ -121,7 +129,8 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
 
         require(amount <= getMaxBet(), "Your bet exceeds the max allowed");
 
-        collectToken(msg.sender, amount + bet_fee, deadline, v, r, s);
+        // Collect ERC-20 tokens
+        collectToken(msg.sender, amount + bet_fee, nonce, expiry, allowed, v, r, s);
         current_liquidity += amount;
         collected_fees += bet_fee;
 
@@ -133,6 +142,10 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         for (uint i; i < bets.length; i++) {
             _rollRequestsBets[requestId].push([uint256(bets[i].betType), uint256(bets[i].value), uint256(bets[i].amount)]);
         }
+    }
+
+    function rollBets(Bet[] memory bets, uint256 randomSeed) public {
+        rollBets(bets, randomSeed, 0, 0, false, 0, 0, 0);
     }
 
     function getRandomNumber(uint256 userProvidedSeed) public returns (bytes32 requestId) {
@@ -196,8 +209,11 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         return max_bet;
     }
 
-    function collectToken(address sender, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) private {
-        IERC20Permit(bet_token).permit(sender, address(this), amount, deadline, v, r, s);
+    function collectToken(address sender, uint256 amount, uint256 nonce, uint expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) private {
+        if (expiry != 0) {
+            DAIPermit(bet_token).permit(sender, address(this), nonce, expiry, allowed, v, r, s);
+        }
+
         IERC20(bet_token).transferFrom(sender, address(this), amount);
     }
 

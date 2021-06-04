@@ -371,30 +371,9 @@ contract('Roulette', async () => {
       await rouletteInteractor.setBetFee(0.02);
       assert.equal(0.02, await rouletteInteractor.getBetFee());
     });
-    it('should bet fail if amout is lower than amount+fee', async () => {
+    it('should bet with fee', async () => {
       await rouletteInteractor.mintDAI(1000);
       await daiMockInteractor.mint(wallet.address, 100);
-      const bets = [
-        {
-          betType: BetType.Color,
-          value: Color.Red,
-          amount: 3,
-        },
-        {
-          betType: BetType.Half,
-          value: 0,
-          amount: 4,
-        },
-      ];
-      let error;
-      try {
-        await rouletteInteractor.rollBets(wallet, bets, 1, 0.01); // +7
-      } catch(_error) {
-        error = _error.reason;
-      }
-      assert.equal(error, 'ERC20Permit: invalid signature');
-    });
-    it('should bet with fee', async () => {
       const bets = [
         {
           betType: BetType.Color,

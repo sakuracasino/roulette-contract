@@ -2,7 +2,7 @@ const Web3 = require('web3');
 const fs = require('fs');
 const { getDeployerWallet } = require('./wallets');
 const { expandTo18Decimals, collapseTo18Decimals } = require('./decimals');
-const getPermitArgs = require('./getPermitArgs');
+const getDAIPermitArgs = require('./getDAIPermitArgs');
 const Roulette = artifacts.require('Roulette');
 const VRFCoordinatorMock = artifacts.require('VRFCoordinatorMock');
 const daiMockInteractor = require('./daiMockInteractor');
@@ -28,11 +28,10 @@ module.exports = {
     const amount = expandTo18Decimals(_amount).toString();
     return await roulette.addLiquidity(
       amount,
-      ...(await getPermitArgs({
+      ...(await getDAIPermitArgs({
         token: await daiMockInteractor.getToken(),
         spenderAddress: roulette.address,
         owner: wallet,
-        amount,
       }))
     );
   },
@@ -61,11 +60,10 @@ module.exports = {
     await roulette.rollBets(
       bets.map(bet => ({...bet, amount: expandTo18Decimals(bet.amount).toString()})),
       randomSeed,
-      ...(await getPermitArgs({
+      ...(await getDAIPermitArgs({
         token: await daiMockInteractor.getToken(),
         spenderAddress: roulette.address,
         owner: wallet,
-        amount: expandTo18Decimals(amount + fee).toString()
       }))
     );
     await signLastBlockVRFRequest(randomSeed);    
