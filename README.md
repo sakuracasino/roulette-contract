@@ -11,7 +11,7 @@ npm install @sakuracasino/roulette-contract --save
 ```
 
 Then you can request the abi or address
-```
+```js
 const {abi, networks} = require('@sakuracasino/roulette-contract');
 
 console.log(abi); // returns the ABI for the Roulette contract
