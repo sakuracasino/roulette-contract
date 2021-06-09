@@ -295,9 +295,9 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
     /**
      * Returns the roll amount of a request
      * @param requestId id of random request
-     * @return amount amount of the roll of the request
+     * @return amount of the roll of the request
      */
-    function getRollRequestAmount(bytes32 requestId) internal view returns(uint256 amount) {
+    function getRollRequestAmount(bytes32 requestId) internal view returns(uint256) {
         uint256[3][] memory bets = _rollRequestsBets[requestId];
         uint256 amount = 0;
 
