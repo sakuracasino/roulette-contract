@@ -322,9 +322,9 @@ contract('Roulette', async () => {
         assert.equal(95, await daiMockInteractor.balanceOf(wallet.address));
         await betNumber(14, 14);
         assert.equal(130, await daiMockInteractor.balanceOf(wallet.address));
-        await betNumber(14, 13, 30);
-        assert.equal(100, await daiMockInteractor.balanceOf(wallet.address));
-        assert.equal(1000, await rouletteInteractor.getTotalLiquidity());
+        await betNumber(14, 13, 10);
+        assert.equal(120, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(980, await rouletteInteractor.getTotalLiquidity());
       });
     });
   });
@@ -345,13 +345,13 @@ contract('Roulette', async () => {
           },
         ];
         await rouletteInteractor.rollBets(wallet, bets, 0); // LOSE
-        assert.equal(93, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(113, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 1); // +7
-        assert.equal(100, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(120, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 11); // +1
-        assert.equal(101, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(121, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 25); // -1
-        assert.equal(100, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(120, await daiMockInteractor.balanceOf(wallet.address));
       });
     });
     describe('with predefined set #2', async () => {

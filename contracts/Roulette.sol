@@ -11,7 +11,6 @@ interface DAIPermit {
     function permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) external;
 }
 
-
 enum BetType {
     Number,
     Color,
@@ -26,7 +25,9 @@ enum Color {
     Red,
     Black
 }
-
+/**
+ * @title Sakura casino roulette
+ */
 contract Roulette is VRFConsumerBase, ERC20, Ownable {
     struct Bet {
         BetType betType;
@@ -38,13 +39,19 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
     mapping (bytes32 => bool) _rollRequestsCompleted;
     mapping (bytes32 => address) _rollRequestsSender;
     mapping (bytes32 => uint8) _rollRequestsResults;
+    mapping (bytes32 => uint256) _rollRequestsTime;
 
     uint256 BASE_SHARES = uint256(10) ** 18;
     uint256 public current_liquidity = 0;
+    uint256 public locked_liquidity = 0;
     uint256 public collected_fees = 0;
     address public bet_token;
     uint256 public max_bet;
     uint256 public bet_fee;
+
+    // Minimum required liquidity for betting 1 token
+    uint256 public constant MIN_LIQUIDITY_MULTIPLIER = 36 * 10;
+    uint8 public constant INVALID_RESULT = 99;
 
     mapping (uint8 => Color) COLORS;
     uint8[18] private RED_NUMBERS = [
@@ -60,6 +67,14 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
     uint256 public randomResult;
     event RequestedRandomness(bytes32 requestId);
 
+    /**
+     * Contract's constructor
+     * @param _bet_token address of the token used for bets and liquidity
+     * @param _vrfCoordinator address of Chainlink's VRFCoordinator contract
+     * @param _link address of the LINK token
+     * @param _keyHash public key of Chainlink's VRF
+     * @param _fee fee to be paid in LINK to Chainlink's VRF
+     */
     constructor(
         address _bet_token,
         address _vrfCoordinator,
@@ -83,6 +98,16 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         }
     }
 
+    /**
+     * Add liquidity to the pool
+     * @param amount amount of liquidity to be added
+     * @param nonce nouce index of permit function
+     * @param expiry expiry date for the permit function
+     * @param allowed indicate "allowed" for the permit function
+     * @param v signature param for the permit function
+     * @param r signature param for the permit function
+     * @param s signature param for the permit function
+     */
     function addLiquidity(uint256 amount, uint256 nonce, uint expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) public {
         require(amount > 0, "You didn't send any balance");
 
@@ -104,11 +129,18 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         _mint(msg.sender, new_shares);
     }
 
+    /**
+     * Add liquidity to the pool: ONLY FOR ERC20 TOKENS WITHOUT PERMIT FUNCTION
+     * @param amount amount of liquidity to be added
+     */
     function addLiquidity(uint256 amount) public {
         addLiquidity(amount, 0, 0, false, 0, 0, 0);
     }
 
-    function removeLiquidity() public payable {
+    /**
+     * Remove liquidity from the pool
+     */
+    function removeLiquidity() external {
         require(balanceOf(msg.sender) > 0, "Your don't have liquidity");
 
         uint256 sender_shares = balanceOf(msg.sender);
@@ -119,6 +151,17 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         IERC20(bet_token).transfer(msg.sender, sender_liquidity);
     }
 
+    /**
+     * Roll bets
+     * @param bets list of bets to be played
+     * @param randomSeed random number seed for the VRF
+     * @param nonce nouce index of permit function
+     * @param expiry expiry date for the permit function
+     * @param allowed indicate "allowed" for the permit function
+     * @param v signature param for the permit function
+     * @param r signature param for the permit function
+     * @param s signature param for the permit function
+     */
     function rollBets(Bet[] memory bets, uint256 randomSeed, uint256 nonce, uint expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) public {
         uint256 amount = 0;
 
@@ -128,10 +171,12 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         }
 
         require(amount <= getMaxBet(), "Your bet exceeds the max allowed");
+        require(amount * 35 <= current_liquidity, "Your bet exceeds the liquidity allowed");
 
         // Collect ERC-20 tokens
         collectToken(msg.sender, amount + bet_fee, nonce, expiry, allowed, v, r, s);
-        current_liquidity += amount;
+        current_liquidity -= amount * 35;
+        locked_liquidity += amount * 36;
         collected_fees += bet_fee;
 
         bytes32 requestId = getRandomNumber(randomSeed);
@@ -139,26 +184,47 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         
         _rollRequestsSender[requestId] = msg.sender;
         _rollRequestsCompleted[requestId] = false;
+        _rollRequestsTime[requestId] = block.timestamp;
         for (uint i; i < bets.length; i++) {
             _rollRequestsBets[requestId].push([uint256(bets[i].betType), uint256(bets[i].value), uint256(bets[i].amount)]);
         }
     }
 
+    /**
+     * Roll bets: ONLY FOR ERC20 TOKENS WITHOUT PERMIT FUNCTION
+     * @param bets list of bets to be played
+     * @param randomSeed random number seed for the VRF
+     */
     function rollBets(Bet[] memory bets, uint256 randomSeed) public {
         rollBets(bets, randomSeed, 0, 0, false, 0, 0, 0);
     }
 
-    function getRandomNumber(uint256 userProvidedSeed) public returns (bytes32 requestId) {
+    /**
+     * Creates a randomness request for Chainlink VRF
+     * @param userProvidedSeed random number seed for the VRF
+     * @return requestId id of the created randomness request
+     */
+    function getRandomNumber(uint256 userProvidedSeed) private returns (bytes32 requestId) {
         require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
         bytes32 _requestId = requestRandomness(keyHash, fee, userProvidedSeed);
         emit RequestedRandomness(_requestId);
         return _requestId;
     }
 
+    /**
+     * Randomness fulfillment to be called by the VRF Coordinator once a request is resolved
+     * This function makes the expected payout to the user
+     * @param requestId id of the resolved request
+     * @param randomness generated random number
+     */
     function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
         require(_rollRequestsCompleted[requestId] == false);
         uint8 result = uint8(randomness % 37);
         uint256[3][] memory bets = _rollRequestsBets[requestId];
+        uint256 rollLockedAmount = getRollRequestAmount(requestId) * 36;
+
+        current_liquidity += rollLockedAmount;
+        locked_liquidity -= rollLockedAmount;
 
         uint256 amount = 0;
         for (uint index = 0; index < bets.length; index++) {
@@ -204,11 +270,56 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
 
         emit BetResult(requestId, result, amount);
     }
-    
-    function getMaxBet() public view returns(uint256) {
-        return max_bet;
+
+    /**
+     * Pays back the roll amount to the user if more than two hours passed and the random request has not been resolved yet
+     * @param requestId id of random request
+     */
+    function redeem(bytes32 requestId) external {
+        require(_rollRequestsCompleted[requestId] == false);
+        require(block.timestamp - _rollRequestsTime[requestId] > 2 hours);
+
+        _rollRequestsCompleted[requestId] = true;
+        _rollRequestsResults[requestId] = INVALID_RESULT;
+
+        uint256 amount = getRollRequestAmount(requestId);
+
+        current_liquidity += amount * 35;
+        locked_liquidity -= amount * 36;
+
+        IERC20(bet_token).transfer(_rollRequestsSender[requestId], amount);
+
+        emit BetResult(requestId, _rollRequestsResults[requestId], amount);
     }
 
+    /**
+     * Returns the roll amount of a request
+     * @param requestId id of random request
+     * @return amount amount of the roll of the request
+     */
+    function getRollRequestAmount(bytes32 requestId) internal view returns(uint256 amount) {
+        uint256[3][] memory bets = _rollRequestsBets[requestId];
+        uint256 amount = 0;
+
+        for (uint index = 0; index < bets.length; index++) {
+            uint256 betAmount = bets[index][2];
+            amount += betAmount;
+        }
+
+        return amount;
+    }
+
+    /**
+     * Collects the requested token amount from a sender
+     * @param sender address of the sender
+     * @param amount amount of the token to be collected
+     * @param nonce nouce index of permit function, unused if non-permit token
+     * @param expiry expiry date for the permit function, 0 if non-permit token
+     * @param allowed indicate "allowed" for the permit function, unused if non-permit token
+     * @param v signature param for the permit function, unused if non-permit token
+     * @param r signature param for the permit function, unused if non-permit token
+     * @param s signature param for the permit function, unused if non-permit token
+     */
     function collectToken(address sender, uint256 amount, uint256 nonce, uint expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) private {
         if (expiry != 0) {
             DAIPermit(bet_token).permit(sender, address(this), nonce, expiry, allowed, v, r, s);
@@ -217,39 +328,100 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         IERC20(bet_token).transferFrom(sender, address(this), amount);
     }
 
+    /**
+     * Returns a request state
+     * @param requestId id of random request
+     * @return indicates if request is completed
+     */
     function isRequestCompleted(bytes32 requestId) public view returns(bool) {
         return _rollRequestsCompleted[requestId];
     }
 
+    /**
+     * Returns the address of a request
+     * @param requestId id of random request
+     * @return address of the request sender
+     */
     function requesterOf(bytes32 requestId) public view returns(address) {
         return _rollRequestsSender[requestId];
     }
 
+    /**
+     * Returns the result of a request
+     * @param requestId id of random request
+     * @return numeric result of the request in range [0, 38], 99 means invalid result from a redeem
+     */
     function resultOf(bytes32 requestId) public view returns(uint8) {
         return _rollRequestsResults[requestId];
     }
 
+    /**
+     * Returns all the bet details in a request
+     * @param requestId id of random request
+     * @return a list of (betType, value, amount) tuplets from the request
+     */
     function betsOf(bytes32 requestId) public view returns(uint256[3][] memory) {
         return _rollRequestsBets[requestId];
     }
 
+    /**
+     * Returns the current pooled liquidity
+     * @return the current liquidity
+     */
     function getCurrentLiquidity() public view returns(uint256) {
         return current_liquidity;
     }
 
+    /**
+     * Returns the current bet fee
+     * @return the bet fee
+     */
     function getBetFee() public view returns(uint256) {
         return bet_fee;
     }
-    
-    function setBetFee(uint256 _bet_fee) public onlyOwner {
-        bet_fee = _bet_fee;
+
+    /**
+     * Returns the current maximum fee
+     * @return the maximum bet
+     */
+    function getMaxBet() public view returns(uint256) {
+        /*
+        uint256 maxBetForLiquidity = current_liquidity / MIN_LIQUIDITY_MULTIPLIER;
+        if (max_bet > maxBetForLiquidity) {
+            return maxBetForLiquidity;
+        }
+        */
+        return max_bet;
     }
 
+    /**
+     * Returns the collected fees so far
+     * @return the collected fees
+     */
     function getCollectedFees() public view returns(uint256) {
         return collected_fees;
     }
+    
+    /**
+     * Sets the bet fee
+     * @param _bet_fee the new bet fee
+     */
+    function setBetFee(uint256 _bet_fee) external onlyOwner {
+        bet_fee = _bet_fee;
+    }
 
-    function withdrawFees() public onlyOwner {
+    /**
+     * Sets the maximum bet
+     * @param _max_bet the new maximum bet
+     */
+    function setMaxBet(uint256 _max_bet) external onlyOwner {
+        max_bet = _max_bet;
+    }
+
+    /**
+     * Withdraws the collected fees
+     */
+    function withdrawFees() external onlyOwner {
         uint256 _collected_fees = collected_fees;
         collected_fees = 0;
         IERC20(bet_token).transfer(owner(), _collected_fees);
@@ -260,10 +432,10 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
      * DO NOT USE IN PRODUCTION,
      * IT IS INTENDED FOR TESTING
      */
-    function forceAddLiquidity(uint256 amount) public {
+    function forceAddLiquidity(uint256 amount) external {
         current_liquidity += amount;
     }
-    function forceRemoveLiquidity(uint256 amount) public {
+    function forceRemoveLiquidity(uint256 amount) external {
         current_liquidity -= amount;
     }
 

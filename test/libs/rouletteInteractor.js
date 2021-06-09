@@ -55,8 +55,6 @@ module.exports = {
   },
   async rollBets(wallet, bets, randomSeed, _fee = 0) {
     const roulette = await Roulette.deployed();
-    const amount = bets.reduce((_amount, bet) => _amount + bet.amount, 0);
-    const fee = _fee || (await this.getBetFee());
     await roulette.rollBets(
       bets.map(bet => ({...bet, amount: expandTo18Decimals(bet.amount).toString()})),
       randomSeed,
