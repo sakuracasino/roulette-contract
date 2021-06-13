@@ -322,11 +322,17 @@ contract('Roulette', async () => {
         assert.equal(95, await daiMockInteractor.balanceOf(wallet.address));
         await betNumber(14, 14);
         assert.equal(130, await daiMockInteractor.balanceOf(wallet.address));
-        await betNumber(14, 13, 10);
-        assert.equal(120, await daiMockInteractor.balanceOf(wallet.address));
-        assert.equal(980, await rouletteInteractor.getTotalLiquidity());
+        assert.equal(970, await rouletteInteractor.getTotalLiquidity());
       });
     });
+  });
+  describe('with max bets', async () => {
+    it('should fail if exceeds max bet', async () => {})
+    it('should fail if exceeds max bet by percentage', async () => {})
+  });
+  describe('with failing requests', async () => {
+    it('should not redeem if timelock has not passed', async () => {})
+    it('should redeem after timelock and unresolved', async () => {})
   });
   describe('with mixed bets', async () => {
     const wallet = wallets[4];
@@ -345,13 +351,13 @@ contract('Roulette', async () => {
           },
         ];
         await rouletteInteractor.rollBets(wallet, bets, 0); // LOSE
-        assert.equal(113, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(123, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 1); // +7
-        assert.equal(120, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(130, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 11); // +1
-        assert.equal(121, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(131, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 25); // -1
-        assert.equal(120, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(130, await daiMockInteractor.balanceOf(wallet.address));
       });
     });
     describe('with predefined set #2', async () => {

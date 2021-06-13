@@ -50,7 +50,10 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
     uint256 public bet_fee;
 
     // Minimum required liquidity for betting 1 token
-    uint256 public constant MIN_LIQUIDITY_MULTIPLIER = 36 * 10;
+    // uint256 public minLiquidityMultiplier = 36 * 10;
+    uint256 public minLiquidityMultiplier = 100;
+    
+    // Constant value to represent an invalid result
     uint8 public constant INVALID_RESULT = 99;
 
     mapping (uint8 => Color) COLORS;
@@ -64,7 +67,6 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
     // Chainlink VRF Data
     bytes32 internal keyHash;
     uint256 internal fee;
-    uint256 public randomResult;
     event RequestedRandomness(bytes32 requestId);
 
     /**
@@ -123,7 +125,7 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
             return;
         }
 
-        uint256 new_shares = (added_liquidity * current_shares) / current_liquidity;
+        uint256 new_shares = (added_liquidity * current_shares) / (current_liquidity + locked_liquidity);
         current_liquidity += added_liquidity;
 
         _mint(msg.sender, new_shares);
@@ -171,7 +173,6 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         }
 
         require(amount <= getMaxBet(), "Your bet exceeds the max allowed");
-        require(amount * 35 <= current_liquidity, "Your bet exceeds the liquidity allowed");
 
         // Collect ERC-20 tokens
         collectToken(msg.sender, amount + bet_fee, nonce, expiry, allowed, v, r, s);
@@ -385,12 +386,10 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
      * @return the maximum bet
      */
     function getMaxBet() public view returns(uint256) {
-        /*
-        uint256 maxBetForLiquidity = current_liquidity / MIN_LIQUIDITY_MULTIPLIER;
+        uint256 maxBetForLiquidity = current_liquidity / minLiquidityMultiplier;
         if (max_bet > maxBetForLiquidity) {
             return maxBetForLiquidity;
         }
-        */
         return max_bet;
     }
 
@@ -416,6 +415,14 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
      */
     function setMaxBet(uint256 _max_bet) external onlyOwner {
         max_bet = _max_bet;
+    }
+
+    /**
+     * Sets minimum liquidity needed for betting 1 token
+     * @param _minLiquidityMultiplier the new minimum liquidity multiplier
+     */
+    function setMinLiquidityMultiplier(uint256 _minLiquidityMultiplier) external onlyOwner {
+        minLiquidityMultiplier = _minLiquidityMultiplier;
     }
 
     /**
