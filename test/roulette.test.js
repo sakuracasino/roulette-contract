@@ -33,8 +33,8 @@ function betFor(betType, wallet) {
 
 contract('Roulette', async () => {
   describe('with liquidity', async () => {
-    await rouletteInteractor.setBetFee(0, {from: getDeployerWallet().address});
     it('should add liquidity', async () => {
+      await rouletteInteractor.setBetFee(0, {from: getDeployerWallet().address});
       const wallet = wallets[0];
       await daiMockInteractor.mint(wallet.address, 150);
       await rouletteInteractor.addLiquidity(wallet, 30);
@@ -47,7 +47,6 @@ contract('Roulette', async () => {
       assert.equal(150, await daiMockInteractor.balanceOf(wallet.address));
       assert.equal(0, await rouletteInteractor.getTotalLiquidity());
     });
-  
     it('should add and remove liquidity for multiple providers', async () => {
       const wallet1 = wallets[0];
       const wallet2 = wallets[1];
@@ -327,12 +326,17 @@ contract('Roulette', async () => {
     });
   });
   describe('with max bets', async () => {
-    it('should fail if exceeds max bet', async () => {})
+    it('should fail if exceeds max bet', async () => {
+      const liquidity = await rouletteInteractor.getTotalLiquidity();
+    })
     it('should fail if exceeds max bet by percentage', async () => {})
   });
   describe('with failing requests', async () => {
-    it('should not redeem if timelock has not passed', async () => {})
-    it('should redeem after timelock and unresolved', async () => {})
+    it('should not redeem if timelock has not passed', async () => {
+      const betHalf = betFor(BetType.Half, wallet);
+      // rouletteInteractor.rollBets(, bets, randomSeed, _fee = 0, autosign=true)
+    });
+    it('should redeem after timelock and unresolved', async () => {});
   });
   describe('with mixed bets', async () => {
     const wallet = wallets[4];

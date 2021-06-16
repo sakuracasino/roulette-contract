@@ -12,7 +12,7 @@ module.exports = {
   },
   async burn(address, amount) {
     const dai = await DAIMock.deployed();
-    return await dai.burn(address, expandTo18Decimals(amount).toString());
+    return await dai.burn(address, expandTo18Decimals(amount).toString(), {from: address});
   },
   async getToken() {
     return await DAIMock.deployed();

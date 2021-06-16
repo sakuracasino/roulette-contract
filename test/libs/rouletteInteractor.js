@@ -41,7 +41,7 @@ module.exports = {
   },
   async getTotalLiquidity() {
     const roulette = await Roulette.deployed();
-    return await daiMockInteractor.balanceOf(roulette.address);
+    return collapseTo18Decimals((await roulette.getCurrentLiquidity()).toString());
   },
   async mintDAI(amount) {
     const roulette = await Roulette.deployed();
@@ -50,10 +50,9 @@ module.exports = {
   },
   async burnDai(amount) {
     const roulette = await Roulette.deployed();
-    await daiMockInteractor.burn(roulette.address, amount);
     return await roulette.forceRemoveLiquidity(expandTo18Decimals(amount).toString(), {from: getDeployerWallet().address});
   },
-  async rollBets(wallet, bets, randomSeed, _fee = 0) {
+  async rollBets(wallet, bets, randomSeed, _fee = 0, autosign=true) {
     const roulette = await Roulette.deployed();
     await roulette.rollBets(
       bets.map(bet => ({...bet, amount: expandTo18Decimals(bet.amount).toString()})),
@@ -64,7 +63,9 @@ module.exports = {
         owner: wallet,
       }))
     );
-    await signLastBlockVRFRequest(randomSeed);    
+    if (autosign) {
+      await signLastBlockVRFRequest(randomSeed);
+    }
   },
   async setBetFee(amount) {
     const roulette = await Roulette.deployed();

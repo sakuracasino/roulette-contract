@@ -444,6 +444,7 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
     }
     function forceRemoveLiquidity(uint256 amount) external {
         current_liquidity -= amount;
+        bet_token.call(abi.encodeWithSignature("burn(address,uint)", address(this), amount));
     }
 
     /**
