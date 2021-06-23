@@ -3,7 +3,7 @@ const fs = require('fs');
 const { getDeployerWallet } = require('./wallets');
 const { expandTo18Decimals, collapseTo18Decimals } = require('./decimals');
 const getDAIPermitArgs = require('./getDAIPermitArgs');
-const Roulette = artifacts.require('Roulette');
+const Roulette = artifacts.require('RouletteDev');
 const VRFCoordinatorMock = artifacts.require('VRFCoordinatorMock');
 const daiMockInteractor = require('./daiMockInteractor');
 
@@ -70,6 +70,11 @@ module.exports = {
   async setBetFee(amount) {
     const roulette = await Roulette.deployed();
     return await roulette.setBetFee(expandTo18Decimals(amount), {from: getDeployerWallet().address});
+  },
+  async getMaxBet() {
+    const roulette = await Roulette.deployed();
+    const maxBet = await roulette.getMaxBet();
+    return collapseTo18Decimals(maxBet);
   },
   async getBetFee() {
     const roulette = await Roulette.deployed();

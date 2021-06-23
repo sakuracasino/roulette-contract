@@ -433,27 +433,4 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         collected_fees = 0;
         IERC20(bet_token).transfer(owner(), _collected_fees);
     }
-
-    /**
-     * Modfies current liquidity intentionally
-     * DO NOT USE IN PRODUCTION,
-     * IT IS INTENDED FOR TESTING
-     */
-    function forceAddLiquidity(uint256 amount) external {
-        current_liquidity += amount;
-    }
-    function forceRemoveLiquidity(uint256 amount) external {
-        current_liquidity -= amount;
-        bet_token.call(abi.encodeWithSignature("burn(address,uint)", address(this), amount));
-    }
-
-    /**
-     * Withdraw LINK from this contract
-     * 
-     * DO NOT USE THIS IN PRODUCTION AS IT CAN BE CALLED BY ANY ADDRESS.
-     * THIS IS PURELY FOR EXAMPLE PURPOSES.
-     */
-    function withdrawLink() external onlyOwner {
-        require(LINK.transfer(msg.sender, LINK.balanceOf(address(this))), "Unable to transfer");
-    }
 }

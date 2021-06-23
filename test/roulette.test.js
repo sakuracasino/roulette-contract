@@ -326,15 +326,32 @@ contract('Roulette', async () => {
     });
   });
   describe('with max bets', async () => {
-    it('should fail if exceeds max bet', async () => {
+    const wallet = wallets[4];
+    const betNumber = betFor(BetType.Number, wallet);
+    it('should fail if exceeds max bet by liquidity percentage', async () => {
       const liquidity = await rouletteInteractor.getTotalLiquidity();
-    })
-    it('should fail if exceeds max bet by percentage', async () => {})
+      const maxBet = await rouletteInteractor.getMaxBet();
+      assert.equal(maxBet, liquidity / 100);
+      try {
+        await betNumber(0, 1, 1 + liquidity / 100);
+      } catch (error) {
+        assert.equal(error.reason, 'Your bet exceeds the max allowed');
+      }
+    });
+    it('should fail if exceeds max bet by fixed max', async () => {
+      await rouletteInteractor.mintDAI(120000);
+      const newMaxBet = await rouletteInteractor.getMaxBet();
+      assert.equal(newMaxBet, 100);
+      try {
+        await betNumber(0, 1, 102);
+      } catch (error) {
+        assert.equal(error.reason, 'Your bet exceeds the max allowed');
+      }
+      await rouletteInteractor.burnDai(120000);
+    });
   });
   describe('with failing requests', async () => {
     it('should not redeem if timelock has not passed', async () => {
-      const betHalf = betFor(BetType.Half, wallet);
-      // rouletteInteractor.rollBets(, bets, randomSeed, _fee = 0, autosign=true)
     });
     it('should redeem after timelock and unresolved', async () => {});
   });

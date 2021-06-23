@@ -1,6 +1,6 @@
 const Web3 = require('web3');
 const fs = require('fs');
-const Roulette = artifacts.require('Roulette');
+const Roulette = artifacts.require('RouletteDev');
 const VRFCoordinatorMock = artifacts.require('VRFCoordinatorMock');
 const colors = require('colors/safe')
 
@@ -11,7 +11,7 @@ function getRandomInt(max) {
 module.exports = async () => {
   console.log(colors.cyan('Intiliazing random signer...'));
   const web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545'));
-  const rouletteJSON = JSON.parse(fs.readFileSync('./build/contracts/Roulette.json', 'utf8'));  
+  const rouletteJSON = JSON.parse(fs.readFileSync('./build/contracts/RouletteDev.json', 'utf8'));  
   const roulette = new web3.eth.Contract(
     rouletteJSON.abi,
     Roulette.address
