@@ -1,3 +1,4 @@
+const { time } = require('@openzeppelin/test-helpers');
 const { getDeployerWallet, getWallets } = require('./libs/wallets');
 const rouletteInteractor = require('./libs/rouletteInteractor');
 const daiMockInteractor = require('./libs/daiMockInteractor');
@@ -351,9 +352,60 @@ contract('Roulette', async () => {
     });
   });
   describe('with failing requests', async () => {
+    const wallet = wallets[4];
+    let initialBalance;
+    let requestId;
     it('should not redeem if timelock has not passed', async () => {
+      initialBalance = await daiMockInteractor.balanceOf(wallet.address);
+      await rouletteInteractor.rollBets(wallet, [
+        {
+          betType: BetType.Number,
+          value: 0,
+          amount: 1,
+        }
+      ], 1, 0, false);
+      assert.equal(initialBalance - 1, await daiMockInteractor.balanceOf(wallet.address));
+      requestId = await rouletteInteractor.getLastRequestId();
+      try {
+        await rouletteInteractor.redeem(requestId);
+      } catch (error) {
+        assert.equal(error.reason, 'Redeem time not passed');
+      }
+      await time.increase(time.duration.hours(1));
+      try {
+        await rouletteInteractor.redeem(requestId);
+      } catch (error) {
+        assert.equal(error.reason, 'Redeem time not passed');
+      }
     });
-    it('should redeem after timelock and unresolved', async () => {});
+    it('should redeem after timelock and unresolved', async () => {
+      await time.increase(time.duration.hours(1.5));
+      await rouletteInteractor.redeem(requestId);
+      assert.equal(initialBalance, await daiMockInteractor.balanceOf(wallet.address));
+    });
+    it('should not redeem if already redeemed', async () => {
+      try {
+        await rouletteInteractor.redeem(requestId);
+      } catch (error) {
+        assert.equal(error.reason, 'requestId already completed');
+      }
+    });
+    it('should not redeem if it was resolved', async () => {
+      await rouletteInteractor.rollBets(wallet, [
+        {
+          betType: BetType.Number,
+          value: 0,
+          amount: 1,
+        }
+      ], 1, 0, false);
+      requestId = await rouletteInteractor.getLastRequestId();
+      await rouletteInteractor.signLastBlockVRFRequest(1);
+      try {
+        await rouletteInteractor.redeem(requestId);
+      } catch (error) {
+        assert.equal(error.reason, 'requestId already completed');
+      }
+    });
   });
   describe('with mixed bets', async () => {
     const wallet = wallets[4];
@@ -372,13 +424,13 @@ contract('Roulette', async () => {
           },
         ];
         await rouletteInteractor.rollBets(wallet, bets, 0); // LOSE
-        assert.equal(123, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(122, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 1); // +7
-        assert.equal(130, await daiMockInteractor.balanceOf(wallet.address));
+        assert.equal(129, await daiMockInteractor.balanceOf(wallet.address));
         await rouletteInteractor.rollBets(wallet, bets, 11); // +1
-        assert.equal(131, await daiMockInteractor.balanceOf(wallet.address));
-        await rouletteInteractor.rollBets(wallet, bets, 25); // -1
         assert.equal(130, await daiMockInteractor.balanceOf(wallet.address));
+        await rouletteInteractor.rollBets(wallet, bets, 25); // -1
+        assert.equal(129, await daiMockInteractor.balanceOf(wallet.address));
       });
     });
     describe('with predefined set #2', async () => {

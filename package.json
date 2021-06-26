@@ -15,6 +15,7 @@
   "license": "ISC",
   "devDependencies": {
     "@ethersproject/contracts": "^5.1.1",
+    "@openzeppelin/test-helpers": "^0.5.11",
     "@solidity-parser/parser": "^0.12.2",
     "@truffle/hdwallet-provider": "^1.2.1",
     "bip39": "^3.0.3",

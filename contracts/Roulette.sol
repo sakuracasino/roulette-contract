@@ -48,6 +48,7 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
     address public bet_token;
     uint256 public max_bet;
     uint256 public bet_fee;
+    uint256 public redeem_min_time = 2 hours;
 
     // Minimum required liquidity for betting 1 token
     // uint256 public minLiquidityMultiplier = 36 * 10;
@@ -277,8 +278,8 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
      * @param requestId id of random request
      */
     function redeem(bytes32 requestId) external {
-        require(_rollRequestsCompleted[requestId] == false);
-        require(block.timestamp - _rollRequestsTime[requestId] > 2 hours);
+        require(_rollRequestsCompleted[requestId] == false, 'requestId already completed');
+        require(block.timestamp - _rollRequestsTime[requestId] > redeem_min_time, 'Redeem time not passed');
 
         _rollRequestsCompleted[requestId] = true;
         _rollRequestsResults[requestId] = INVALID_RESULT;

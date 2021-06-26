@@ -11,6 +11,14 @@ const web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545'
 const rouletteJSON = JSON.parse(fs.readFileSync('./build/contracts/Roulette.json', 'utf8'));  
 const rouletteWeb3 = new web3.eth.Contract(rouletteJSON.abi,Roulette.address);
 
+async function getLastRequestId() {
+  const previousRequests = await rouletteWeb3.getPastEvents('BetRequest', {fromBlock: 'latest', toBlock: 'latest'});
+  if (previousRequests.length) {
+    return previousRequests[0].returnValues.requestId;
+  }
+  return 0;
+}
+
 async function signLastBlockVRFRequest(value) {
   const vrfCoordinator = await VRFCoordinatorMock.deployed();
   const previousRequests = await rouletteWeb3.getPastEvents('BetRequest', {fromBlock: 'latest', toBlock: 'latest'});
@@ -67,6 +75,10 @@ module.exports = {
       await signLastBlockVRFRequest(randomSeed);
     }
   },
+  async redeem(requestId) {
+    const roulette = await Roulette.deployed();
+    return await roulette.redeem(requestId);
+  },
   async setBetFee(amount) {
     const roulette = await Roulette.deployed();
     return await roulette.setBetFee(expandTo18Decimals(amount), {from: getDeployerWallet().address});
@@ -89,4 +101,6 @@ module.exports = {
     const roulette = await Roulette.deployed();
     return collapseTo18Decimals(await roulette.getCollectedFees());
   },
+  getLastRequestId,
+  signLastBlockVRFRequest,
 };
