@@ -379,7 +379,8 @@ contract('Roulette', async () => {
       }
     });
     it('should redeem after timelock and unresolved', async () => {
-      await time.increase(time.duration.hours(1.5));
+      await time.increase(time.duration.hours(2));
+      console.log('requestId', requestId)
       await rouletteInteractor.redeem(requestId);
       assert.equal(initialBalance, await daiMockInteractor.balanceOf(wallet.address));
     });
