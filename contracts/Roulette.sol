@@ -434,4 +434,11 @@ contract Roulette is VRFConsumerBase, ERC20, Ownable {
         collected_fees = 0;
         IERC20(bet_token).transfer(owner(), _collected_fees);
     }
+
+    /**
+     * Sets the value of Chainlink's VRF fee
+     */
+    function setVRFFee(uint256 _fee) external onlyOwner {
+        fee = _fee;
+    }
 }
