@@ -12,6 +12,18 @@ module.exports = [
     "vrf_fee": "100000000000000",
   },
   {
+    "title": "Mumbai Testnet",
+    "chain_id": 80001,
+    "network_id": 80001,
+    "network_name": "mumbai",
+    "bet_token_address": "0x26f4a59dbfa18757c38c8bb02a8de5447d946b7b",
+    "contract_address": "0xbd2b9e181a29f713e2d176e678f4303c95f5cca0",
+    "vrf_coordinator_address": "0x8C7382F9D8f56b33781fE506E897a4F1e2d17255",
+    "link_token_address": "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
+    "keyHash": "0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4",
+    "vrf_fee": "100000000000000",
+  },
+  {
     "title": "Kovan",
     "chain_id": 42,
     "network_id": 42,
